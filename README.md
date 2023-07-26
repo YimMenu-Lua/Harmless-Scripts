@@ -1,2 +1,2 @@
 # harmless-lua
-Repo for luas made by Harmless for Yimmenu
+Repo for Lua scripts made by Harmless for YimMenu
