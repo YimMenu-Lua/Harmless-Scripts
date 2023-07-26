@@ -1,5 +1,5 @@
 # harmless-lua
-Repo for Lua scripts made by Harmless for YimMenu
+Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/YimMenu/)
 
 ### Current scripts:
 | Name | Description | Location | Download |
