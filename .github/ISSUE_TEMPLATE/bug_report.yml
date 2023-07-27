@@ -1,0 +1,63 @@
+name: Bug report
+description: Report bugs for existing Lua scripts
+title: "[BUG] "
+labels: bug
+body:
+- type: textarea
+  attributes:
+    label: What Lua script does this affect
+    description: Name of the Lua script that you had this bug in.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe the bug
+    description: A clear description of what the bug is.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: How to replicate
+    description: Steps to reproduce the behavior.
+    placeholder: |
+      1. Go to '...'
+      2. Click on '...'
+      3. Scroll down to '...'
+      4. See error
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: A clear description of what you expected to happen.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Possible evidence
+    description: |
+      Add any screenshots or videos to help explain your problem.
+
+      Tip: To add screenshots or videos, just click on this area to make it stand out and then drag the files in.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Additional context
+    description: Add any other context about the problem here.
+  validations:
+    required: false
+- type: checkboxes
+  attributes:
+    label: Build
+    description: Please verify that this issue is present in the most recent version of YimMenu.
+    options:
+      - label: I've confirmed that the issue exists in the latest version of YimMenu.
+        required: true
+- type: checkboxes
+  attributes:
+    label: Lua script version
+    description: Make sure you are using the latest version of the Lua script.
+    options:
+      - label: I've confirmed that I am using the latest version of this Lua script
+        required: true

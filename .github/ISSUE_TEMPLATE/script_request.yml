@@ -1,0 +1,42 @@
+name: Suggest a new Lua script
+description: Suggest a new Lua script that you would like to see added to the repository.
+title: "[SCRIPT REQUEST] "
+labels: script request
+body:
+- type: textarea
+  attributes:
+    label: What should the Lua script be called?
+    description: Name of the Lua script you are suggesting.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe the suggestion
+    description: A clear description of what the Lua script should do.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Why do you think this Lua script would be useful?
+    description: A clear description of why you think this Lua script would be useful.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: List options in Lua script
+    description: List any options and what that said option should do in that Lua script.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Additional context
+    description: Add any other context or notes about the Lua request here.
+  validations:
+    required: false
+- type: checkboxes
+  attributes:
+    label: Existing script
+    description: Make sure that this script DOES NOT already exist in THIS repository OR in YimMenu AND YimMenu Lua repository.
+    options:
+      - label: I've confirmed that this script DOES NOT already exist.
+        required: true

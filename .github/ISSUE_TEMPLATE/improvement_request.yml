@@ -1,0 +1,51 @@
+name: Suggestion for an existing Lua script
+description: Suggest a new feature for an existing Lua script.
+title: "[ENHANCEMENT] "
+labels: enhancement
+body:
+- type: textarea
+  attributes:
+    label: What Lua script is this suggestion for?
+    description: Name of the Lua script you are suggesting a suggestion for.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe the suggestion
+    description: A clear description of what the suggestion is.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Why do you think this suggestion would be useful?
+    description: A clear description of why you think this suggestion would be useful.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Where in the Menu should the feature be?
+    description: Describe where in the Menu the feature should be.
+    placeholder: |
+      Example: Vehicle -> Fun Features
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Additional context
+    description: Add any other context or notes about the suggestion request here.
+  validations:
+    required: false
+- type: checkboxes
+  attributes:
+    label: Feature
+    description: Make sure that this feature IS NOT already implemented in the Lua script.
+    options:
+      - label: I've confirmed that this feature IS NOT already implemented in the Lua script
+        required: true
+- type: checkboxes
+  attributes:
+    label: Version
+    description: Make sure you are using the latest version of the Lua script.
+    options:
+      - label: I've confirmed that I am using the latest version of this Lua script
+        required: true
