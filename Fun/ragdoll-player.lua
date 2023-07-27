@@ -17,7 +17,6 @@ function ragdollPlayer()
 end
 
 script.register_looped("ragdollPlayerLoop", function()
-	
 	if loop:is_enabled() then
 		ragdollPlayer()
 		loops = tostring(loopSpeed:get_value())
