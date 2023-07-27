@@ -49,15 +49,3 @@ ForceFlags:set_value(1)
 Forcex:set_value(10)
 Forcey:set_value(10)
 Forcez:set_value(10)
-
-
--- menu.add_delimiter("Ragdoll Player", ragdollTab)
--- menu.add_option("Ragdoll Player [Once]", "ragdollPlayer", ragdollTab, ragdollPlayer)
--- menu.add_option_toggle("Ragdoll Player [Loop]", "ragdollPlayerLoop", ragdollTab, ragdollPlayerLoop)
-
--- menu.add_option_value("Force Types", "forceFlags", 0, 0, 5, 1, ragdollTab, "", forceFlags)
--- menu.add_option_value("Force", "forceX", 10, 0, 10000, 1, ragdollTab, "X", forceX)
--- menu.add_option_value("Force", "forceY", 10, 0, 10000, 1, ragdollTab, "Y", forceY)
--- menu.add_option_value("Force", "forceZ", 10, 0, 10000, 1, ragdollTab, "Z", forceZ)
-
--- menu.update_root_parent(true)
