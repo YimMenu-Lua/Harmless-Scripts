@@ -10,6 +10,7 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 | Set Vehicle Max Speed | Lua script that allows you to set the max speed limit of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/set-vehicle-max-speed.lua) |
 | Shift Drift | Lua script that allows you to press shift to drift | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/shift-drift.lua) |
 | Auto Flip Vehicle | Lua script that allows you to flip your vehicle automatically back upwards | Vehicle | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/auto-flip-vehicle.lua) |
+| Set Vehicle Forward Speed | Lua script that allows you to set the forward speed of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/vehicle-forward-speed.lua) |
 
 ## How to install
 
