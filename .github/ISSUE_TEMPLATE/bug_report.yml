@@ -8,6 +8,8 @@ body:
     label: What Lua script does this affect
     description: Name of the Lua script that you had this bug in.
   validations:
+      placeholder: |
+        Example: Ragdoll Player or ragdoll-player.lua
     required: true
 - type: textarea
   attributes:
@@ -39,6 +41,13 @@ body:
       Add any screenshots or videos to help explain your problem.
 
       Tip: To add screenshots or videos, just click on this area to make it stand out and then drag the files in.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: YimMenu logs
+    description: |
+      Could you please provide the YimMenu logs for the issue you encountered?
   validations:
     required: false
 - type: textarea
