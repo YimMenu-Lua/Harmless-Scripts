@@ -6,7 +6,7 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 
 | Name | Description | Location | Download |
 | ----------- | ----------- | ----------- | ----------- |
-| Ragdoll player | Lua script that allows you to ragdoll yourself once or looped, with customizable options | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |
+| Ragdoll Player | Lua script that allows you to ragdoll yourself once or looped, with customizable options | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |
 | Set Vehicle Max Speed | Lua script that allows you to set the max speed limit of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/set-veh-max-speed.lua) |
 | Shift Drift | Lua script that allows you to press shift to drift | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/shift-drift.lua) |
 | Auto Flip Vehicle | Lua script that allows you to flip your vehicle automatically back upwards | Vehicle | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/auto-flip-vehicle.lua) |
