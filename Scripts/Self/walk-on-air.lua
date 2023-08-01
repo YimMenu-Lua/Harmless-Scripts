@@ -37,15 +37,12 @@ script.register_looped("walkOnAirLoop", function (scriptloop)
             local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
             local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true)
             if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
-                log.info("going down CTRL")
                 ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
                 scriptloop:sleep(100)
             elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
-                log.info("going up SHIFT")
                 ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
                 scriptloop:sleep(50)
             else
-                log.info("keeping under player")
                 ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
                 scriptloop:sleep(50)
             end
@@ -53,7 +50,6 @@ script.register_looped("walkOnAirLoop", function (scriptloop)
     else
         objectSpawned = false
         if object ~= nil then
-            log.info("deleting object 2")
             OBJECT.DELETE_OBJECT(object)
             object = nil
         end
