@@ -7,9 +7,9 @@ body:
   attributes:
     label: What Lua script does this affect
     description: Name of the Lua script that you had this bug in.
-  validations:
-      placeholder: |
+    placeholder: |
         Example: Ragdoll Player or ragdoll-player.lua
+  validations:
     required: true
 - type: textarea
   attributes:
