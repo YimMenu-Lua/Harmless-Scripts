@@ -18,8 +18,8 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 1. Download the script you want to use
 2. Put the script in the `scripts` folder of YimMenu
     - You can find the YimMenu folder by opening the RUN window (Windows key + R) and typing `%appdata%` and pressing enter
-    - Then look for the `YimMenu` folder and open it
-    - Then open the `scripts` folder
+    - Then look for the `YimMenu` -> `scripts` folder and put the script in there
+    - OR you can open YimMenu goto in the menu `Settings` -> `Lua Scripts` and click on the `Open Lua Scripts Folder` button. Then put the script in there
 3. Launch GTA V and open YimMenu if you haven't already
 4. Click on the `Reload All` button if the script does not appear
 
