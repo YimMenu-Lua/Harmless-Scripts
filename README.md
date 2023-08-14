@@ -4,16 +4,15 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 
 ## Current scripts
 
-| Name | Description | Location | Download |
+| Name / Preview | Description | Location | Download |
 | ----------- | ----------- | ----------- | ----------- |
-| Ragdoll Player | Lua script that allows you to ragdoll yourself once or looped, with customizable options | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |
-| Walk on Air | Lua script that allows you to walk on air. | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/walk-on-air.lua) |
-| Player Speed Multipliers | Lua script that allows you to set the speed multiplier of walk and swim speed | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/player-speed-multiplier.lua) |
-| Set Vehicle Max Speed | Lua script that allows you to set the max speed limit of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/set-veh-max-speed.lua) |
-| Shift Drift | Lua script that allows you to press shift to drift | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/shift-drift.lua) |
-| Auto Flip Vehicle | Lua script that allows you to flip your vehicle automatically back upwards | Vehicle | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/auto-flip-vehicle.lua) |
-| Set Vehicle Forward Speed | Lua script that allows you to set the forward speed of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/veh-forward-speed.lua) |
-
+| Ragdoll Player | Ragdoll yourself once or looped | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |  |
+| Walk on Air | Walk on air (literally) | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/walk-on-air.lua) |
+| Player Speed Multipliers | Set the speed multiplier of walk and swim speed | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/player-speed-multiplier.lua) |
+| Set Vehicle Max Speed | Set the max speed limit of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/set-veh-max-speed.lua) |
+| Shift Drift | Press shift to drift | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/shift-drift.lua) |
+| Auto Flip Vehicle | Flip your vehicle automatically back upwards | Vehicle | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/auto-flip-vehicle.lua) |
+| Set Vehicle Forward Speed | Set the forward speed of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/veh-forward-speed.lua) |
 
 ## How to install
 
@@ -41,4 +40,4 @@ You are welcome to use the scripts provided in this repository for your own **pe
 
 If you encounter any issues or bugs while using the scripts, please report them to the author so that they can be fixed. The author welcomes feedback and suggestions for improving the scripts.
 
-You can report your issues by visiting the following link: https://github.com/Harmless05/harmless-lua/issues/new/choose
+You can report your issues by visiting the following link: <https://github.com/Harmless05/harmless-lua/issues/new/choose>
