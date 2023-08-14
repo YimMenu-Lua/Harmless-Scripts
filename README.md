@@ -9,6 +9,7 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 | Ragdoll Player | Ragdoll yourself once or looped | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |  |
 | Walk on Air | Walk on air (literally) | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/walk-on-air.lua) |
 | Player Speed Multipliers | Set the speed multiplier of walk and swim speed | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/player-speed-multiplier.lua) |
+| Player Regeneration | Regenerate your health and armor | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/player-regen.lua) |
 | Set Vehicle Max Speed | Set the max speed limit of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/set-veh-max-speed.lua) |
 | Set Vehicle Forward Speed | Set the forward speed of your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/veh-forward-speed.lua) |
 | Shift Drift | Press SHIFT to drift your vehicle | Vehicle -> Fun Features | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Vehicle/shift-drift.lua) |
