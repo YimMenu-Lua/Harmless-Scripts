@@ -4,7 +4,7 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 
 ## Current scripts
 
-| Name / Preview | Description | Location | Download |
+| Name | Description | Location | Download |
 | ----------- | ----------- | ----------- | ----------- |
 | Ragdoll Player | Ragdoll yourself once or looped | Self -> Ragdoll Player | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/ragdoll-player.lua) |  |
 | Walk on Air | Walk on air (literally) | Self | [link](https://github.com/Harmless05/harmless-lua/blob/main/Scripts/Self/walk-on-air.lua) |
@@ -27,18 +27,20 @@ Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/Y
 
 ## Warranty Disclaimer
 
-The scripts provided in this repository are provided "as is" without warranty of any kind, either express or implied, including without limitation any warranty with respect to their fitness for any particular purpose. The author of these scripts makes no representations or warranties that the scripts will meet your requirements, or that their operation will be uninterrupted or error-free. The author shall not be liable for any damages (including but not limited to direct, indirect, special, incidental, consequential, or punitive damages) arising out of your use of the scripts, even if the author has been advised of the possibility of such damages.
+The scripts provided in this repository are provided "as is" without warranty of any kind. These scripts may not work as expected and the author (Harmless) isn’t responsible for any issues that arise from their use. By using these scripts, you accept all risks and agree to not hold Harmless accountable for any negative outcomes.
 
-Please use these scripts at your own risk. By using these scripts, you agree to indemnify and hold harmless the author from any and all claims, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or in connection with your use of the scripts.
+Please use these scripts at your own risk. By using these scripts, you agree to indemnify and hold Harmless, the author from any and all claims, damages, losses, liabilities, costs, and expenses arising from your use of these scripts.
 
 ## Usage of scripts
 
-You are welcome to use my scripts, but please **do not claim** them as your own. **Please credit me** if you wish to use my scripts in your own script or create a forked version.
+You are welcome to use my scripts, but please **DO NOT claim** them as your own. **Please credit me** if you wish to use my scripts in your own script or create a forked version.
 
-You are welcome to use the scripts provided in this repository for your own **personal projects**. However, please note that they are not intended for commercial use. If you wish to use these scripts for commercial purposes, please contact the author to obtain permission.
+You are welcome to use the scripts provided in this repository for your own **personal projects**. However, please note that they are not intended for commercial use. If you wish to use these scripts for commercial purposes, please contact me (Harmless) to obtain permission.
 
 ## Reporting and suggestions
 
-If you encounter any issues or bugs while using the scripts, please report them to the author so that they can be fixed. The author welcomes feedback and suggestions for improving the scripts.
+If you encounter any issues or bugs while using the scripts, please report them to this [repository's issue tracker](https://github.com/Harmless05/harmless-lua/issues) or get in touch with me directly via Discord. Please include as much information as possible, including the script name, the version of the script, and the version of YimMenu you are using.
 
-You can report your issues by visiting the following link: <https://github.com/Harmless05/harmless-lua/issues/new/choose>
+You are also welcome to suggest new scripts, features, or improvements to existing scripts. Please note that I may not be able to implement all suggestions, but I will do my best to consider them
+
+#### You can report your issues by visiting the following link: <https://github.com/Harmless05/harmless-lua/issues/new/choose>
