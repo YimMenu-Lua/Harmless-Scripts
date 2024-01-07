@@ -1,7 +1,7 @@
 --[[
   Harmless's Scripts
   Description: Harmless's Scripts is a collection of scripts made by Harmless.
-  Version: 1.0.0
+  Version: 1.0.1
 ]]--
 
 gui.show_message("Harmless's Scripts", "Harmless's Scripts loaded successfully!")
@@ -22,8 +22,7 @@ ExperimentalTab = HSSettings:add_tab("Experimentals")
 HSTab:add_imgui(function()
   ImGui.Text("Version: 1.0.0")
   ImGui.Text("Github:")
-  ImGui.SameLine()
-  ImGui.TextColored(0.8, 0.9, 1, 1, "Harmless05/harmless-lua")
+  ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "Harmless05/harmless-lua")
   if ImGui.IsItemHovered() and ImGui.IsItemClicked(0) then
     ImGui.SetClipboardText("https://github.com/Harmless05/harmless-lua")
     HSNotification("Copied to clipboard!")
@@ -96,12 +95,14 @@ function playerRegenTab()
   local newhealthCB, healthToggled = ImGui.Checkbox("Health Regeneration", healthCB)
   if healthToggled then
     healthCB = newhealthCB
+HSConsoleLogDebug("Health Regeneration " .. tostring(healthCB))
   end
   healthregenspeed, hSpeedUsed = ImGui.SliderFloat("Health Regen Speed", healthregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic)
   healthhealamount, hAmountUsed = ImGui.SliderInt("Health Regen Amount", healthhealamount, 1, 50)
   local newarmourCB, armourToggled = ImGui.Checkbox("Armor Regeneration", armourCB)
   if armourToggled then
     armourCB = newarmourCB
+HSConsoleLogDebug("Armor Regeneration " .. tostring(armourCB))
   end
   armourregenspeed, aSpeedUsed = ImGui.SliderFloat("Armor Regen Speed", armourregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic)
   armourhealamount, aAmountUsed = ImGui.SliderInt("Armor Regen Amount", armourhealamount, 1, 50)
@@ -109,6 +110,7 @@ end
 
 script.register_looped("HS Health Regeneration Loop", function(healthLoop)
   if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) then
+HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
       local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
       if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
       ENTITY.SET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID(), health + healthhealamount, 0, 0)
@@ -118,6 +120,7 @@ end)
 
 script.register_looped("HS Armour Regeneration Loop", function(armorLoop)
   if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_PED_ID()) then
+HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
     PED.ADD_ARMOUR_TO_PED(PLAYER.PLAYER_PED_ID(), armourhealamount)
     armorLoop:sleep(math.floor(armourregenspeed * 1000)) -- 1ms * 1000 to get seconds
   end
@@ -139,11 +142,12 @@ local ragdollType = 0
 function ragdollPlayerTab()
   if ImGui.Button("Ragdoll Player [Once]") then
     ragdollPlayerOnce()
+HSConsoleLogDebug("Ragdolling Player Once")
   end
-  ImGui.SameLine()
-  local newRagdollLoopCB, ragdollLoopToggled = ImGui.Checkbox("Ragdoll Player [Loop]", ragdollLoopCB)
+  ImGui.SameLine(); local newRagdollLoopCB, ragdollLoopToggled = ImGui.Checkbox("Ragdoll Player [Loop]", ragdollLoopCB)
   if ragdollLoopToggled then
     ragdollLoopCB = newRagdollLoopCB
+HSConsoleLogDebug("Ragdoll Loop " .. tostring(ragdollLoopCB))
   end
   ImGui.Separator()
   ImGui.LabelText("Parameters", "Ragdoll Settings")
@@ -344,7 +348,7 @@ script.register_looped("HS Shift Drift Loop", function(driftLoop)
   else 
     VEHICLE.SET_DRIFT_TYRES(CurrentVeh, false)
   end
-  if shiftDriftCB and PAD.IS_CONTROL_PRESSED(0, 21) and driftTyresCB == false then
+  if shiftDriftCB and PAD.IS_CONTROL_PRESSED(0, 21) and not driftTyresCB then
     VEHICLE.SET_VEHICLE_REDUCE_GRIP(CurrentVeh, true)
     VEHICLE.SET_VEHICLE_REDUCE_GRIP_LEVEL(CurrentVeh, driftAmount)
   else
@@ -479,7 +483,7 @@ local thermalVisionCB = false
 local defaultThermalVisCV = false
 local tVisStartFade = 1000
 local tVisEndFade = 1000
-local tVisWallThickness = 1000
+local tVisWallThickness = 200
 local tVisNoiseMin = 0.0
 local tVisNoiseMax = 0.0
 local tVisHilightIntensity = 0.5
@@ -502,21 +506,21 @@ function playerVisionTab()
   if not defaultThermalVisCV then -- Thermal Vision Settings
     ImGui.LabelText("Parameters", "Thermal Vision Settings")
     ImGui.Spacing()
-    local newtVisStartFade, tVisStartFadeUsed = ImGui.SliderFloat("Start Fade", tVisStartFade, 0, 10000)
+    local newtVisStartFade, tVisStartFadeUsed = ImGui.SliderFloat("Start Fade", tVisStartFade, 0, 4000)
     if tVisStartFadeUsed then
       tVisStartFade = newtVisStartFade
     end
     if ImGui.IsItemHovered() then
       HSshowTooltip("Bigger the value, the more you can see through walls (Where the fading of the thermal vision starts)")
     end
-    local newtVisEndFade, tVisEndFadeUsed = ImGui.SliderFloat("End Fade", tVisEndFade, 0, 10000)
+    local newtVisEndFade, tVisEndFadeUsed = ImGui.SliderFloat("End Fade", tVisEndFade, 0, 4000)
     if tVisEndFadeUsed then
       tVisEndFade = newtVisEndFade
     end
     if ImGui.IsItemHovered() then
       HSshowTooltip("Bigger the value, the more you can see through walls (END value needs to be higher than START value)")
     end
-    local newtVisWallThickness, tVisWallThicknessUsed = ImGui.SliderFloat("Wall Thickness", tVisWallThickness, 1, 10000)
+    local newtVisWallThickness, tVisWallThicknessUsed = ImGui.SliderFloat("Wall Thickness", tVisWallThickness, 1, 200)
     if tVisWallThicknessUsed then
       tVisWallThickness = newtVisWallThickness
     end
@@ -576,7 +580,7 @@ function playerVisionTab()
 end
 
 script.register_looped("HS Thermal Vision Loop", function(thermalLoop)
-  if thermalVisionCB and weaponScopeCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) and defaultThermalVisCV == false then -- Weapon Scope Thermal Vision
+  local function setThermalVision()
     GRAPHICS.SEETHROUGH_SET_FADE_STARTDISTANCE(tVisStartFade)
     GRAPHICS.SEETHROUGH_SET_FADE_ENDDISTANCE(tVisEndFade)
     GRAPHICS.SEETHROUGH_SET_MAX_THICKNESS(tVisWallThickness)
@@ -585,21 +589,25 @@ script.register_looped("HS Thermal Vision Loop", function(thermalLoop)
     GRAPHICS.SEETHROUGH_SET_HILIGHT_INTENSITY(tVisHilightIntensity)
     GRAPHICS.SEETHROUGH_SET_HIGHLIGHT_NOISE(tVisHilightNoise)
     GRAPHICS.SET_SEETHROUGH(true)
-  elseif thermalVisionCB and weaponScopeCB == false and defaultThermalVisCV == false then -- Always On Thermal Vision
-    GRAPHICS.SEETHROUGH_SET_FADE_STARTDISTANCE(tVisStartFade)
-    GRAPHICS.SEETHROUGH_SET_FADE_ENDDISTANCE(tVisEndFade)
-    GRAPHICS.SEETHROUGH_SET_MAX_THICKNESS(tVisWallThickness)
-    GRAPHICS.SEETHROUGH_SET_NOISE_MIN(tVisNoiseMin)
-    GRAPHICS.SEETHROUGH_SET_NOISE_MAX(tVisNoiseMax)
-    GRAPHICS.SEETHROUGH_SET_HILIGHT_INTENSITY(tVisHilightIntensity)
-    GRAPHICS.SEETHROUGH_SET_HIGHLIGHT_NOISE(tVisHilightNoise)
-    GRAPHICS.SET_SEETHROUGH(true)
-  elseif thermalVisionCB and defaultThermalVisCV and weaponScopeCB == false then -- Default Thermal Vision
+  end
+
+  local function resetThermalVision()
     GRAPHICS.SEETHROUGH_RESET(true)
     GRAPHICS.SET_SEETHROUGH(true)
-  elseif thermalVisionCB and weaponScopeCB and defaultNightVisCV and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) then -- Default Thermal Vision (Weapon Scope)
-    GRAPHICS.SEETHROUGH_RESET(true)
-    GRAPHICS.SET_SEETHROUGH(true)
+  end
+
+  if thermalVisionCB then
+      if weaponScopeCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) and not defaultThermalVisCV then -- Weapon Scope Thermal Vision
+          setThermalVision()
+      elseif not weaponScopeCB and not defaultThermalVisCV then -- Always On Thermal Vision
+          setThermalVision()
+      elseif defaultThermalVisCV and not weaponScopeCB then -- Default Thermal Vision
+          resetThermalVision()
+      elseif weaponScopeCB and defaultThermalVisCV and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) then -- Default Thermal Vision (Weapon Scope)
+    resetThermalVision()
+      else
+          GRAPHICS.SET_SEETHROUGH(false)
+      end
   else
     GRAPHICS.SET_SEETHROUGH(false)
   end
@@ -609,7 +617,7 @@ script.register_looped("HS Night Vision Loop", function(nightLoop)
   if nightVisionCB and weaponScopeCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) then -- Weapon Scope Night Vision
     GRAPHICS.OVERRIDE_NIGHTVISION_LIGHT_RANGE(nVisLightRange)
     GRAPHICS.SET_NIGHTVISION(true)
-  elseif nightVisionCB and weaponScopeCB == false then -- Always On Night Vision
+  elseif nightVisionCB and not weaponScopeCB then -- Always On Night Vision
     GRAPHICS.OVERRIDE_NIGHTVISION_LIGHT_RANGE(nVisLightRange)
     GRAPHICS.SET_NIGHTVISION(true)
   else
@@ -714,7 +722,9 @@ end)
 ]]
 local notifyCB = true
 local toolTipCB = true
-local HSConsoleLogCB = true
+local HSConsoleLogInfoCB = true
+local HSConsoleLogWarnCB = true
+local HSConsoleLogDebugCB = true
 HSSettings:add_imgui(function()
   local newNotifyCB, notifyToggled = ImGui.Checkbox("HS Notifications", notifyCB)
   if notifyToggled then
@@ -730,12 +740,26 @@ HSSettings:add_imgui(function()
   if ImGui.IsItemHovered() then
     HSshowTooltip("This will enable/disable tooltips for Harmless's Scripts")
   end
-  local newHSConsoleLogCB, HSConsoleLogToggled = ImGui.Checkbox("HS Console Logs", HSConsoleLogCB)
-  if HSConsoleLogToggled then
-    HSConsoleLogCB = newHSConsoleLogCB
+  local newHSConsoleLogInfoCB, HSConsoleLogInfoToggled = ImGui.Checkbox("HS Console Logs (Info)", HSConsoleLogInfoCB)
+  if HSConsoleLogInfoToggled then
+    HSConsoleLogInfoCB = newHSConsoleLogInfoCB
   end
   if ImGui.IsItemHovered() then
-    HSshowTooltip("This will enable/disable YimMenu console logs for Harmless's Scripts")
+    HSshowTooltip("Enable/disable YimMenu info console logs for Harmless's Scripts")
+  end
+  local newHSConsoleLogWarnCB, HSConsoleLogWarnToggled = ImGui.Checkbox("HS Console Logs (Warning)", HSConsoleLogWarnCB)
+  if HSConsoleLogWarnToggled then
+    HSConsoleLogWarnCB = newHSConsoleLogWarnCB
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("Enable/disable YimMenu warning console logs for Harmless's Scripts")
+  end
+  local newHSConsoleLogDebugCB, HSConsoleLogDebugToggled = ImGui.Checkbox("HS Console Logs (Debug)", HSConsoleLogDebugCB)
+  if HSConsoleLogDebugToggled then
+    HSConsoleLogDebugCB = newHSConsoleLogDebugCB
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("Enable/disable YimMenu debug console logs for Harmless's Scripts")
   end
 end)
 
@@ -861,17 +885,17 @@ function HSshowTooltip(message)
 end
 -- Console logs for Harmless's Scripts
 function HSConsoleLogInfo(message) -- Info
-  if HSConsoleLogCB then
+  if HSConsoleLogInfoCB then
     log.info(message)
   end
 end
 function HSConsoleLogWarn(message) -- Warning
-  if HSConsoleLogCB then
+  if HSConsoleLogWarnCB then
     log.warning(message)
   end
 end
 function HSConsoleLogDebug(message) -- Debug
-  if HSConsoleLogCB then
+  if HSConsoleLogDebugCB then
     log.debug(message)
   end
 end
