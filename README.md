@@ -2,6 +2,8 @@
 
 Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/YimMenu/)
 
+Mirrored repository from [Harmless05/harmless-lua](https://github.com/Harmless05/harmless-lua/)
+
 ## Current Features of Harmless's Scripts
 
 | Name | Description | Location |
