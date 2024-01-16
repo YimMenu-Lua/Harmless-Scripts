@@ -18,6 +18,10 @@ Mirrored repository from [Harmless05/harmless-lua](https://github.com/Harmless05
 | Auto Flip Vehicle | Flip your vehicle automatically back upwards | Vehicle |
 | Thermal and Night Vision | Enable Thermal and Night Vision | Misc |
 | Quick Options | Ease of access to more "popular" options | Quick |
+| Quick Teleport | Save your current location and teleport to it later | Teleport |
+| Popular Locations | Teleport to popular GTAV locations | Teleport -> Popular Locations |
+| Show Local Time | Shows your local time on the screen | HUD |
+| NPC ESP | ESP for NPCs | Misc |
 
 ## How to install
 
