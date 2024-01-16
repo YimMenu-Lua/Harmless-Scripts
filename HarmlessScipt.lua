@@ -1,17 +1,20 @@
 --[[
   Harmless's Scripts
   Description: Harmless's Scripts is a collection of scripts made by Harmless.
-  Version: 1.0.1
+  Version: 1.1.0
 ]]--
 
 gui.show_message("Harmless's Scripts", "Harmless's Scripts loaded successfully!")
 
 HSTab = gui.get_tab("Harmless's Scripts")
 SelfTab = HSTab:add_tab("Self Options")
+TeleportTab = SelfTab:add_tab("Teleport Options")
+PopularLocationsTab = TeleportTab:add_tab("Popular Locations")
 VehicleTab = HSTab:add_tab("Vehicle Options")
 MiscTab = HSTab:add_tab("Misc Options")
 QuickTab = HSTab:add_tab("Quick Options")
 HSSettings = HSTab:add_tab("HS Settings")
+HudTab = HSSettings:add_tab("HUD")
 ExperimentalTab = HSSettings:add_tab("Experimentals")
 
 --[[
@@ -20,7 +23,7 @@ ExperimentalTab = HSSettings:add_tab("Experimentals")
 
 ]]--
 HSTab:add_imgui(function()
-  ImGui.Text("Version: 1.0.0")
+  ImGui.Text("Version: 1.1.0")
   ImGui.Text("Github:")
   ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "Harmless05/harmless-lua")
   if ImGui.IsItemHovered() and ImGui.IsItemClicked(0) then
@@ -231,6 +234,153 @@ script.register_looped("HS Player Speed Multiplier Loop", function(speedLoop) --
   end
 end)
 
+--[[
+
+  Teleport Options
+
+]]--
+
+--[[
+
+  Quick Teleport -> Teleport Options
+
+]]--
+
+TeleportTab:add_imgui(function()
+  quickTeleportTab()
+end)
+
+local teleportLocations = {}
+local drawMarker = false
+
+function quickTeleportTab()
+  local player = PLAYER.PLAYER_PED_ID()
+  local currentCoords = ENTITY.GET_ENTITY_COORDS(player, true)
+  
+  ImGui.BulletText("Quick Teleport")
+
+  if ImGui.Button("Save Current Location") then
+    local heading = ENTITY.GET_ENTITY_HEADING(player)
+    teleportLocations[1] = {currentCoords.x, currentCoords.y, currentCoords.z, heading}
+    HSNotification("Saved current location!")
+    HSConsoleLogDebug("Saved current location")
+    HSConsoleLogDebug("Saved location: x = " .. currentCoords.x .. ", y = " .. currentCoords.y .. ", z = " .. currentCoords.z .. ", heading = " .. heading)
+  end
+
+  if teleportLocations[1] ~= nil then
+    local savedLocation = teleportLocations[1]
+    ImGui.Text(string.format("Current location: X=%.2f, Y=%.2f, Z=%.2f", savedLocation[1], savedLocation[2], savedLocation[3]))
+    
+    local dx = savedLocation[1] - currentCoords.x
+    local dy = savedLocation[2] - currentCoords.y
+    local dz = savedLocation[3] - currentCoords.z
+    local distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+    ImGui.Text(string.format("Distance to saved location: %.0f meters", distance))
+    
+    if ImGui.Button("Teleport to Saved Location") then
+      PED.SET_PED_COORDS_KEEP_VEHICLE(player, savedLocation[1], savedLocation[2], savedLocation[3])
+      ENTITY.SET_ENTITY_HEADING(player, savedLocation[4])
+      HSNotification("Teleported to saved location!")
+      HSConsoleLogDebug("Teleported to saved location")
+    end
+
+    ImGui.Separator()
+
+    local newdrawMarker, drawMarkerToggled = ImGui.Checkbox("Draw Marker", drawMarker)
+    if drawMarkerToggled then
+      drawMarker = newdrawMarker
+    end
+  end
+end
+
+script.register_looped("HS Draw Marker Loop", function(drawMarkerLoop)
+  if drawMarker then
+    local player = PLAYER.PLAYER_PED_ID()
+    local savedLocation = teleportLocations[1]
+    if savedLocation ~= nil then
+      GRAPHICS.DRAW_MARKER_EX(1, savedLocation[1], savedLocation[2], savedLocation[3], 0, 0, 0, 0, 0, 0, 2.0, 2.0, savedLocation[3] + 1500.0, 255, 255, 255, 100, false, false, 2, false, "", "", false, true, true)
+    end
+  end
+end)
+
+--[[
+
+  Popular Locations -> Teleport Options -> Self Options
+
+]]--
+
+PopularLocationsTab:add_imgui(function()
+  PopularLocTab()
+  ImGui.Separator()
+  ImGui.Spacing()
+  --PopularLocCamView()
+end)
+
+local TeleportToLocCB = true
+local popularLocations = {
+  {name = "Select a location", x = 0.0, y = 0.0, z = 0.0, heading = 0.0},
+  {name = "Los Santos Customs", x = -376, y = -123, z = 39, heading = 233.0},
+  {name = "LS Airport Customs", x = -1134.2, y = -1984.4, z = 13.2, heading = 235.5},
+  {name = "La Mesa Customs", x = 709.8, y = -1082.7, z = 22.4, heading = 235.5},
+  {name = "Senora Desert Customs", x = 1178.7, y = 2666.2, z = 37.881, heading = 235.5},
+  {name = "Beeker's Customs", x = 126.2, y = 6608.2, z = 31.9, heading = 235.5},
+  {name = "Benny's vehicles", x = -210.7, y =  -1301.4, z = 31.3, heading = 235.5},
+  {name = "Airport center", x = -1336.0, y = -3044.0, z = 14, heading = 0.0},
+  {name = "Airport Hanger", x = -1000.0, y = -3025.0, z = 13.0, heading = 0.0},
+  {name = "Airport Gate", x = -994.4, y = -2851.7, z = 14.0, heading = 148.2},
+  {name = "Airport Back", x = -1704.8, y = -2831.4, z = 14.0, heading = 239.0},
+  {name = "Maze Bank Top", x = -75.0, y = -818.0, z = 326.0, heading = 0.0},
+  {name = "Maze Bank Bottom", x = -53.0, y = -791.5, z = 44.0, heading = 315.8},
+  {name = "Eclipse Towers", x = -807.3, y = 301.9, z = 86.1, heading = 235.5},
+  {name = "Casino Enterance", x = 918.6, y = 50.3, z = 80.8, heading = 235.5},
+  {name = "Casino Parking Lot", x = 899.6, y = -20.4, z = 78.8, heading = 87.0},
+  {name = "Ammunation", x = 247.4, y = -45.9, z = 70.0, heading = 235.5},
+  {name = "Impound Lot", x = 401.0, y = -1631.8, z = 29.3, heading = 235.5},
+  {name = "Mors Mutual Insurance", x = -224.0, y = -1180.8, z = 23.0, heading = 2.6},
+  {name = "Mask Shop", x = -1338.2, y = -1278.1, z = 4.9, heading = 235.5},
+  {name = "Tattoo Shop", x = -1155.7, y = -1422.5, z = 4.8, heading = 235.5},
+  {name = "Clothes Store", x = -719.0, y = -158.2, z = 37.0, heading = 235.5},
+  {name = "Airport Tower", x = -985.0, y = -2642.0, z = 63.5, heading = 235.5},
+}
+
+function PopularLocTab()
+  local player = PLAYER.PLAYER_PED_ID()
+
+  -- Create a list of location names
+  local locationNames = {}
+  for i, location in ipairs(popularLocations) do
+    table.insert(locationNames, location.name)
+  end
+
+  newTeleportToLocCB, teleportToLocToggled = ImGui.Checkbox("Teleport to Location", TeleportToLocCB)
+  if teleportToLocToggled then
+    TeleportToLocCB = newTeleportToLocCB
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("Teleport to the location you selected")
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("View the location you selected as CAM\nPress \"F\" to exit")
+  end
+  if ViewLocAsCamCB then
+    HSNotification("Press \"F\" to exit CAM")
+  end
+  
+  local popularLocationsIndex = 0
+  local current_item = popularLocationsIndex
+  local clicked = false
+  current_item, clicked = ImGui.Combo("", current_item, locationNames, #locationNames)
+
+  if clicked then
+    popularLocationsIndex = current_item
+    local selectedLocation = popularLocations[current_item + 1]
+    if TeleportToLocCB and not ViewLocAsCamCB then
+      PED.SET_PED_COORDS_KEEP_VEHICLE(player, selectedLocation.x, selectedLocation.y, selectedLocation.z)
+      ENTITY.SET_ENTITY_HEADING(player, selectedLocation.heading)
+      HSConsoleLogDebug("Teleported to " .. selectedLocation.name)
+    end
+  end
+end
 
 --[[
 
@@ -420,10 +570,8 @@ local objectSpawned = false
 
 function spawnObject() -- Spawns the "air"
   gui.show_message("Controls", "Left SHIFT = go up\nLeft CTRL = go down")
-  if HSConsoleLogCB then
-    HSConsoleLogInfo("Spawning object")
-  end
-  local player = PLAYER.PLAYER_PED_ID()
+  HSConsoleLogDebug("Spawning object")
+    local player = PLAYER.PLAYER_PED_ID()
   local coords = ENTITY.GET_ENTITY_COORDS(player, true)
   STREAMING.REQUEST_MODEL(-698352776)
   object = OBJECT.CREATE_OBJECT(-698352776, coords.x, coords.y, coords.z - 1.2, true, false, false)
@@ -433,15 +581,12 @@ function spawnObject() -- Spawns the "air"
   ENTITY.SET_ENTITY_COLLISION(object, true, false)
   ENTITY.SET_ENTITY_DYNAMIC(object, false)
   ENTITY.FREEZE_ENTITY_POSITION(object, true)
-
 end
 
 function deleteObject()
   if object ~= nil then
-      if HSConsoleLogCB then
-        HSConsoleLogInfo("Deleting object")
-      end
-      OBJECT.DELETE_OBJECT(object)
+      HSConsoleLogDebug("Deleting object")
+            OBJECT.DELETE_OBJECT(object)
       object = nil
   end
 end
@@ -624,7 +769,78 @@ script.register_looped("HS Night Vision Loop", function(nightLoop)
     GRAPHICS.SET_NIGHTVISION(false)
   end
 end)
+--[[
 
+  NPC ESP -> Misc Options
+
+  Credits to @pierrelasse in GitHub for helping me with this :D
+
+]]--
+
+local npcEspCB = false
+local npcEspDistance = 50
+
+function npcEspTab()
+  local newnpcEspCB, npcEspToggled = ImGui.Checkbox("NPC ESP", npcEspCB)
+  if npcEspToggled then
+    npcEspCB = newnpcEspCB
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("This will draw a box around NPCs")
+  end
+  npcEspDistance, npcEspDistanceUsed = ImGui.SliderFloat("ESP Max Distance", npcEspDistance, 0, 150)
+end
+
+function calculate_distance(x1, y1, z1, x2, y2, z2)
+  return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2 + (z2 - z1) ^ 2)
+end
+
+function draw_rect(x, y, width, height)
+  GRAPHICS.DRAW_RECT(x, y, width, height, 255, 0, 0, 255, false)
+end
+
+script.register_looped("HS NPC ESP Loop", function(npcEspLoop)
+  if npcEspCB then
+    local player = PLAYER.PLAYER_PED_ID()
+    local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
+
+    local allPeds = entities.get_all_peds_as_handles()
+    for i, ped in ipairs(allPeds) do
+      if ENTITY.DOES_ENTITY_EXIST(ped) and not PED.IS_PED_A_PLAYER(ped) and PED.IS_PED_HUMAN(ped) and not PED.IS_PED_DEAD_OR_DYING(ped, true) then
+        local pedCoords = ENTITY.GET_ENTITY_COORDS(ped, true)
+        HSConsoleLogDebug("Found ped " .. ped .. " at coordinates " .. tostring(pedCoords))
+        local distance = SYSTEM.VDIST(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z)
+        if distance <= npcEspDistance then
+          local success, screenX, screenY = GRAPHICS.GET_SCREEN_COORD_FROM_WORLD_COORD(pedCoords.x, pedCoords.y, pedCoords.z, 0.0, 0.0)
+          HSConsoleLogDebug("Screen coords: " .. tostring(screenX) .. ", " .. tostring(screenY))
+          if success then
+            -- Calculate the distance from the ped to the camera
+            local camCoords = CAM.GET_GAMEPLAY_CAM_COORD()
+            HSConsoleLogDebug("Camera coords: " .. tostring(camCoords))
+            local distanceToCam = calculate_distance(pedCoords.x, pedCoords.y, pedCoords.z, camCoords.x, camCoords.y, camCoords.z)
+            HSConsoleLogDebug("Distance to ped " .. ped .. " is " .. distanceToCam)
+
+            -- Size of the box based on the distance to the camera
+            local boxSize = 2 * (1 / distanceToCam)
+
+            -- Minimum box thickness
+            local minThickness = 0.001
+
+            -- Thickness of the outline based on the distance to the camera, with a lower limit
+            local thickness = math.max(minThickness, 0.0015 * (1 / distanceToCam))
+            HSConsoleLogDebug("Box thickness: " .. thickness)
+
+            -- Call the functions to draw the box
+            draw_rect(screenX, screenY - boxSize / 2, boxSize / 4, thickness) -- Top
+            draw_rect(screenX, screenY + boxSize / 2, boxSize / 4, thickness) -- Bottom
+            draw_rect(screenX - boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Left
+            draw_rect(screenX + boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Right
+          end
+        end
+      end
+    end
+  end
+end)
   
 --[[
 
@@ -661,8 +877,7 @@ QuickTab:add_imgui(function()
   if ImGui.Button("Give Max Armor") then
     command.call("givearmor",{SelfPed})
   end
-  
-  if ImGui.Button("Clean Player") then
+    if ImGui.Button("Clean Player") then
     command.call("clean",{})
   end
   if ImGui.Button("Fill Snacks") then
@@ -703,6 +918,9 @@ QuickTab:add_imgui(function()
   ImGui.Separator()
   -- Misc Options
   ImGui.BulletText("Misc")
+if ImGui.Button("Leave Online") then
+    NETWORK.NETWORK_SESSION_LEAVE_SINGLE_PLAYER()
+  end
   ImGui.PushStyleColor(ImGuiCol.Text, 1, 0.8, 0.45, 1)
   if ImGui.Button("Damage Player") then
     ENTITY.SET_ENTITY_HEALTH(SelfPed, 100, 0, 0)
@@ -762,6 +980,119 @@ HSSettings:add_imgui(function()
     HSshowTooltip("Enable/disable YimMenu debug console logs for Harmless's Scripts")
   end
 end)
+
+--[[
+
+  HUD Tab
+
+]]--
+
+HudTab:add_imgui(function()
+  ImGui.Text("HUD Options")
+  ImGui.Separator()
+  ImGui.Spacing()
+  showTimeTab()
+end)
+
+
+--[[
+
+  Show IRL Time -> HUD Tab
+
+]]--
+
+local currentTimeCB = false
+local showSecondsCB = false
+local disableTextCB = false
+local timeTxtLocX = 0.94
+local timeTxtLocY = 0.01
+local timeTxtScale = 0.4
+local timeTxtColor = {1.0, 1.0, 1.0, 1.0}
+local timeTxtDropShadowCB = true
+
+function showTimeTab()
+  local newcurrentTimeCB, currentTimeToggled = ImGui.Checkbox("Show Current Time", currentTimeCB)
+  if currentTimeToggled then
+    currentTimeCB = newcurrentTimeCB
+  end
+  if ImGui.IsItemHovered() then
+    HSshowTooltip("This will draw the current time on your screen")
+  end
+  if currentTimeCB then
+    local newshowSecondsCB, showSecondsToggled = ImGui.Checkbox("Show Seconds", showSecondsCB)
+    if showSecondsToggled then
+      showSecondsCB = newshowSecondsCB
+    end
+    if ImGui.IsItemHovered() then
+      HSshowTooltip("This will show seconds in the time")
+    end
+    local newdisableTextCB, disableTextToggled = ImGui.Checkbox("Disable Text", disableTextCB)
+    if disableTextToggled then
+      disableTextCB = newdisableTextCB
+    end
+    if ImGui.IsItemHovered() then
+      HSshowTooltip("This will disable the \"Current time:\" text")
+    end
+    timeTxtLocX, timeTxtLocXUsed = ImGui.SliderFloat("Text Location X", timeTxtLocX, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic)
+    if ImGui.IsItemHovered() then
+      HSshowTooltip("This will change the X location of the text")
+    end
+    timeTxtLocY, timeTxtLocYUsed = ImGui.SliderFloat("Text Location Y", timeTxtLocY, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic)
+    if ImGui.IsItemHovered() then
+      HSshowTooltip("This will change the Y location of the text")
+    end
+    timeTxtScale, timeTxtScaleUsed = ImGui.SliderFloat("Text Scale", timeTxtScale, 0.1, 1, "%.1f", ImGuiSliderFlags.Logarithmic)
+    if ImGui.IsItemHovered() then
+      HSshowTooltip("This will change the scale of the text")
+    end
+    timeTxtColor, timeTxtColorUsed = ImGui.ColorEdit4("Text Color", timeTxtColor)
+    local newtimeTxtDropShadowCB, timeTxtDropShadowToggled = ImGui.Checkbox("Text Drop Shadow", timeTxtDropShadowCB)
+    if timeTxtDropShadowToggled then
+      timeTxtDropShadowCB = newtimeTxtDropShadowCB
+    end
+  end
+end
+
+script.register_looped("HS Show Time Loop", function(showTimeLoop)
+  if currentTimeCB then
+    local timestamp = os.time()
+    local date = os.date("*t", timestamp)
+
+    local function formatTimeUnit(timeUnit)
+      return timeUnit < 10 and "0" .. timeUnit or timeUnit
+    end
+
+    local defaultTime = date.hour .. ":" .. formatTimeUnit(date.min)
+    local seconds = formatTimeUnit(date.sec)
+
+    local timeText = defaultTime
+    if showSecondsCB then
+      timeText = timeText .. ":" .. seconds
+    end
+    if not disableTextCB then
+      timeText = "Current time: " .. timeText
+    end
+
+    if timeTxtDropShadowCB then
+      dropShadow = 1
+    elseif not timeTxtDropShadowCB then
+      dropShadow = 0
+    end
+    local timeTxtColorR = math.floor(timeTxtColor[1] * 255)
+    local timeTxtColorG = math.floor(timeTxtColor[2] * 255)
+    local timeTxtColorB = math.floor(timeTxtColor[3] * 255)
+    local timeTxtColorA = math.floor(timeTxtColor[4] * 255)
+
+    HUD.BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
+    HUD.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(timeText)
+    HUD.SET_TEXT_JUSTIFICATION(0)
+    HUD.SET_TEXT_SCALE(timeTxtScale, timeTxtScale)
+    HUD.SET_TEXT_DROPSHADOW(dropShadow, 1, 1, 1, 1)
+    HUD.SET_TEXT_COLOUR(timeTxtColorR, timeTxtColorG, timeTxtColorB, timeTxtColorA)
+    HUD.END_TEXT_COMMAND_DISPLAY_TEXT(timeTxtLocX, timeTxtLocY, 0)
+  end
+end)
+
 
 --[[
 
