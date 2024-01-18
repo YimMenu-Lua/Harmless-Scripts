@@ -942,7 +942,7 @@ local notifyCB = true
 local toolTipCB = true
 local HSConsoleLogInfoCB = true
 local HSConsoleLogWarnCB = true
-local HSConsoleLogDebugCB = true
+local HSConsoleLogDebugCB = false
 HSSettings:add_imgui(function()
   local newNotifyCB, notifyToggled = ImGui.Checkbox("HS Notifications", notifyCB)
   if notifyToggled then
