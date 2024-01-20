@@ -1,5 +1,5 @@
 name: Suggestion for an existing feature
-description: Suggest a new feature/improvement for an existing feature in Harmlesse's Scripts.
+description: Suggest a new feature/improvement for an existing feature in Harmless's Scripts.
 title: "[ENHANCEMENT] "
 labels: enhancement
 body:
@@ -45,7 +45,7 @@ body:
 - type: checkboxes
   attributes:
     label: Version
-    description: Make sure you are using the latest version of Harmlesse's Scripts and YimMenu.
+    description: Make sure you are using the latest version of Harmless's Scripts and YimMenu.
     options:
       - label: I've confirmed that I am using the latest version.
         required: true
