@@ -1,12 +1,12 @@
-name: Suggestion for an existing Lua script
-description: Suggest a new feature for an existing Lua script.
+name: Suggestion for an existing feature
+description: Suggest a new feature/improvement for an existing feature in Harmlesse's Scripts.
 title: "[ENHANCEMENT] "
 labels: enhancement
 body:
 - type: textarea
   attributes:
-    label: What Lua script is this suggestion for?
-    description: Name of the Lua script you are suggesting a suggestion for.
+    label: What feature is this suggestion for?
+    description: Name of the current feature you are suggesting a improvement for.
   validations:
     required: true
 - type: textarea
@@ -38,14 +38,14 @@ body:
 - type: checkboxes
   attributes:
     label: Feature
-    description: Make sure that this feature IS NOT already implemented in the Lua script.
+    description: Make sure that this suggestion IS NOT already implemented in Harmless's Scripts OR in YimMenu AND YimMenu Lua repository.
     options:
-      - label: I've confirmed that this feature IS NOT already implemented in the Lua script
+      - label: I've confirmed that this suggestion IS NOT already implemented.
         required: true
 - type: checkboxes
   attributes:
     label: Version
-    description: Make sure you are using the latest version of the Lua script.
+    description: Make sure you are using the latest version of Harmlesse's Scripts and YimMenu.
     options:
-      - label: I've confirmed that I am using the latest version of this Lua script
+      - label: I've confirmed that I am using the latest version.
         required: true

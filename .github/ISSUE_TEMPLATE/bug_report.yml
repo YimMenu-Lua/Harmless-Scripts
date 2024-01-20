@@ -1,14 +1,14 @@
 name: Bug report
-description: Report bugs for existing Lua scripts
+description: Report bugs for existing features.
 title: "[BUG] "
 labels: bug
 body:
 - type: textarea
   attributes:
-    label: What Lua script does this affect
-    description: Name of the Lua script that you had this bug in.
+    label: What feature does this affect
+    description: Name of the feature that you had this bug in.
     placeholder: |
-        Example: Ragdoll Player or ragdoll-player.lua
+        Example: Ragdoll Player (Loop)
   validations:
     required: true
 - type: textarea
@@ -65,8 +65,8 @@ body:
         required: true
 - type: checkboxes
   attributes:
-    label: Lua script version
-    description: Make sure you are using the latest version of the Lua script.
+    label: Harmlesse's Scripts version
+    description: Make sure you are using the latest version of Harmlesse's Scripts.
     options:
-      - label: I've confirmed that I am using the latest version of this Lua script
+      - label: I've confirmed that I am using the latest version of this script.
         required: true
