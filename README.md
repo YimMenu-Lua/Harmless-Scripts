@@ -8,20 +8,36 @@ Mirrored repository from [Harmless05/harmless-lua](https://github.com/Harmless05
 
 | Name | Description | Location |
 | ----------- | ----------- | ----------- |
-| Ragdoll Player | Ragdoll yourself once or looped | Self |
-| Walk on Air | Walk on air (literally) | Self |
-| Player Speed Multipliers | Set the speed multiplier of walk and swim speed | Self |
-| Player Regeneration | Regenerate your health and armor | Self |
-| Set Vehicle Max Speed | Set the max speed limit of your vehicle | Vehicle |
-| Set Vehicle Forward Speed | Set the forward speed of your vehicle | Vehicle |
-| Shift Drift | Press SHIFT to drift your vehicle | Vehicle |
-| Auto Flip Vehicle | Flip your vehicle automatically back upwards | Vehicle |
-| Thermal and Night Vision | Enable Thermal and Night Vision | Misc |
-| Quick Options | Ease of access to more "popular" options | Quick |
-| Quick Teleport | Save your current location and teleport to it later | Teleport |
-| Popular Locations | Teleport to popular GTAV locations | Teleport -> Popular Locations |
-| Show Local Time | Shows your local time on the screen | HUD |
-| NPC ESP | ESP for NPCs | Misc |
+| <details><summary>Ragdoll Player</summary>![Image]()</details> | Ragdoll yourself once or looped | Self |
+| <details><summary>Walk on Air</summary>![Image]()</details> | Walk on air (literally) | Self |
+| <details><summary>Player Speed Multipliers</summary>![Image]()</details> | Set the speed multiplier of walk and swim speed | Self |
+| <details><summary>Player Regeneration</summary>![Image]()</details> | Regenerate your health and armor | Self |
+| <details><summary>Set Vehicle Max Speed</summary>![Image]()</details> | Set the max speed limit of your vehicle | Vehicle |
+| <details><summary>Set Vehicle Forward Speed</summary>![Image]()</details> | Set the forward speed of your vehicle | Vehicle |
+| <details><summary>Shift Drift</summary>![Image]()</details> | Press SHIFT to drift your vehicle | Vehicle |
+| <details><summary>Auto Flip Vehicle</summary>![Image]()</details> | Flip your vehicle automatically back upwards | Vehicle |
+| <details><summary>Thermal and Night Vision</summary>![Image]()</details> | Enable Thermal and Night Vision | Misc |
+| <details><summary>Quick Options</summary>![Image]()</details> | Ease of access to more "popular" options | Quick |
+| <details><summary>Quick Teleport</summary>![Image]()</details> | Save your current location and teleport to it later | Teleport |
+| <details><summary>Popular Locations</summary>![Image]()</details> | Teleport to popular GTAV locations | Teleport -> Popular Locations |
+| <details><summary>Show Local Time</summary>![Image]()</details> | Shows your local time on the screen | HUD |
+| <details><summary>NPC ESP</summary>![Image]()</details> | ESP for NPCs | Misc |
+| <details><summary>Radar Zoom</summary>![Image]()</details> | Zoom the radar in and out | HUD |
+| <details><summary>Expanded Radar</summary>![Image]()</details> | Show expanded radar (has the same effect when pressin Z, but is always on) | HUD |
+
+## Special Features of Harmless's Scripts
+
+- **Custom Tooltip** - Experimental type of tooltip.
+  - **Tooltip Delay** - Tooltip appears after a 300ms hover delay. 
+  - **Tooltip Position** - Tooltip appears at the bottom center of the screen.
+  - **Special Message & Color** - Set a "special message" for the tooltip that's below the regular tooltip message with a custom color.
+
+Future ideas for the custom tooltip.
+
+- [ ] Ability to change the delay time
+- [ ] Change the position of the tooltip
+- [ ] Show current keybind for the item (button, checkbox, etc)
+- [ ] Set a custom hotkey for the item
 
 ## How to install
 

@@ -1,7 +1,7 @@
 --[[
   Harmless's Scripts
   Description: Harmless's Scripts is a collection of scripts made by Harmless.
-  Version: 1.1.0
+  Version: 1.2.0
 ]]--
 
 gui.show_message("Harmless's Scripts", "Harmless's Scripts loaded successfully!")
@@ -15,7 +15,494 @@ MiscTab = HSTab:add_tab("Misc Options")
 QuickTab = HSTab:add_tab("Quick Options")
 HSSettings = HSTab:add_tab("HS Settings")
 HudTab = HSSettings:add_tab("HUD")
+ESPTab = HSSettings:add_tab("NPC ESP")
 ExperimentalTab = HSSettings:add_tab("Experimentals")
+
+--[[
+
+  RXI JSON Library (Modified)
+  Credits: RXI (json.lua - for the original library)
+
+]]--
+
+function json()
+  local json = { _version = "0.1.2" }
+  --encode
+  local encode
+
+  local escape_char_map = {
+    [ "\\" ] = "\\",
+    [ "\"" ] = "\"",
+    [ "\b" ] = "b",
+    [ "\f" ] = "f",
+    [ "\n" ] = "n",
+    [ "\r" ] = "r",
+    [ "\t" ] = "t",
+  }
+
+  local escape_char_map_inv = { [ "/" ] = "/" }
+  for k, v in pairs(escape_char_map) do
+    escape_char_map_inv[v] = k
+  end
+
+  local function escape_char(c)
+    return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
+  end
+
+  local function encode_nil(val)
+    return "null"
+  end
+
+  local function encode_table(val, stack)
+    local res = {}
+    stack = stack or {}
+    if stack[val] then error("circular reference") end
+
+    stack[val] = true
+
+    if rawget(val, 1) ~= nil or next(val) == nil then
+      local n = 0
+      for k in pairs(val) do
+        if type(k) ~= "number" then
+          error("invalid table: mixed or invalid key types")
+        end
+        n = n + 1
+      end
+      if n ~= #val then
+        error("invalid table: sparse array")
+      end
+      for i, v in ipairs(val) do
+        table.insert(res, encode(v, stack))
+      end
+      stack[val] = nil
+      return "[" .. table.concat(res, ",") .. "]"
+    else
+      for k, v in pairs(val) do
+        if type(k) ~= "string" then
+          error("invalid table: mixed or invalid key types")
+        end
+        table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+      end
+      stack[val] = nil
+      return "{" .. table.concat(res, ",") .. "}"
+    end
+  end
+
+  local function encode_string(val)
+    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+  end
+
+  local function encode_number(val)
+    if val ~= val or val <= -math.huge or val >= math.huge then
+      error("unexpected number value '" .. tostring(val) .. "'")
+    end
+    return string.format("%.14g", val)
+  end
+
+  local type_func_map = {
+    [ "nil"     ] = encode_nil,
+    [ "table"   ] = encode_table,
+    [ "string"  ] = encode_string,
+    [ "number"  ] = encode_number,
+    [ "boolean" ] = tostring,
+  }
+
+  encode = function(val, stack)
+    local t = type(val)
+    local f = type_func_map[t]
+    if f then
+      return f(val, stack)
+    end
+    error("unexpected type '" .. t .. "'")
+  end
+
+  function json.encode(val)
+    return ( encode(val) )
+  end
+
+
+  --decode
+  local parse
+
+  local function create_set(...)
+    local res = {}
+    for i = 1, select("#", ...) do
+      res[ select(i, ...) ] = true
+    end
+    return res
+  end
+
+  local space_chars   = create_set(" ", "\t", "\r", "\n")
+  local delim_chars   = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
+  local escape_chars  = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
+  local literals      = create_set("true", "false", "null")
+
+  local literal_map = {
+    [ "true"  ] = true,
+    [ "false" ] = false,
+    [ "null"  ] = nil,
+  }
+
+  local function next_char(str, idx, set, negate)
+    for i = idx, #str do
+      if set[str:sub(i, i)] ~= negate then
+        return i
+      end
+    end
+    return #str + 1
+  end
+
+  local function decode_error(str, idx, msg)
+    local line_count = 1
+    local col_count = 1
+    for i = 1, idx - 1 do
+      col_count = col_count + 1
+      if str:sub(i, i) == "\n" then
+        line_count = line_count + 1
+        col_count = 1
+      end
+    end
+    error( string.format("%s at line %d col %d", msg, line_count, col_count) )
+  end
+
+  local function codepoint_to_utf8(n)
+    local f = math.floor
+    if n <= 0x7f then
+      return string.char(n)
+    elseif n <= 0x7ff then
+      return string.char(f(n / 64) + 192, n % 64 + 128)
+    elseif n <= 0xffff then
+      return string.char(f(n / 4096) + 224, f(n % 4096 / 64) + 128, n % 64 + 128)
+    elseif n <= 0x10ffff then
+      return string.char(f(n / 262144) + 240, f(n % 262144 / 4096) + 128,
+                        f(n % 4096 / 64) + 128, n % 64 + 128)
+    end
+    error( string.format("invalid unicode codepoint '%x'", n) )
+  end
+
+  local function parse_unicode_escape(s)
+    local n1 = tonumber( s:sub(1, 4),  16 )
+    local n2 = tonumber( s:sub(7, 10), 16 )
+    if n2 then
+      return codepoint_to_utf8((n1 - 0xd800) * 0x400 + (n2 - 0xdc00) + 0x10000)
+    else
+      return codepoint_to_utf8(n1)
+    end
+  end
+
+  local function parse_string(str, i)
+    local res = ""
+    local j = i + 1
+    local k = j
+
+    while j <= #str do
+      local x = str:byte(j)
+      if x < 32 then
+        decode_error(str, j, "control character in string")
+      elseif x == 92 then -- `\`: Escape
+        res = res .. str:sub(k, j - 1)
+        j = j + 1
+        local c = str:sub(j, j)
+        if c == "u" then
+          local hex = str:match("^[dD][89aAbB]%x%x\\u%x%x%x%x", j + 1)
+                  or str:match("^%x%x%x%x", j + 1)
+                  or decode_error(str, j - 1, "invalid unicode escape in string")
+          res = res .. parse_unicode_escape(hex)
+          j = j + #hex
+        else
+          if not escape_chars[c] then
+            decode_error(str, j - 1, "invalid escape char '" .. c .. "' in string")
+          end
+          res = res .. escape_char_map_inv[c]
+        end
+        k = j + 1
+      elseif x == 34 then -- `"`: End of string
+        res = res .. str:sub(k, j - 1)
+        return res, j + 1
+      end
+      j = j + 1
+    end
+    decode_error(str, i, "expected closing quote for string")
+  end
+
+  local function parse_number(str, i)
+    local x = next_char(str, i, delim_chars)
+    local s = str:sub(i, x - 1)
+    local n = tonumber(s)
+    if not n then
+      decode_error(str, i, "invalid number '" .. s .. "'")
+    end
+    return n, x
+  end
+
+  local function parse_literal(str, i)
+    local x = next_char(str, i, delim_chars)
+    local word = str:sub(i, x - 1)
+    if not literals[word] then
+      decode_error(str, i, "invalid literal '" .. word .. "'")
+    end
+    return literal_map[word], x
+  end
+
+  local function parse_array(str, i)
+    local res = {}
+    local n = 1
+    i = i + 1
+    while 1 do
+      local x
+      i = next_char(str, i, space_chars, true)
+      -- Empty / end of array?
+      if str:sub(i, i) == "]" then
+        i = i + 1
+        break
+      end
+      -- Read token
+      x, i = parse(str, i)
+      res[n] = x
+      n = n + 1
+      -- Next token
+      i = next_char(str, i, space_chars, true)
+      local chr = str:sub(i, i)
+      i = i + 1
+      if chr == "]" then break end
+      if chr ~= "," then decode_error(str, i, "expected ']' or ','") end
+    end
+    return res, i
+  end
+
+  local function parse_object(str, i)
+    local res = {}
+    i = i + 1
+    while 1 do
+      local key, val
+      i = next_char(str, i, space_chars, true)
+      -- Empty / end of object?
+      if str:sub(i, i) == "}" then
+        i = i + 1
+        break
+      end
+      -- Read key
+      if str:sub(i, i) ~= '"' then
+        decode_error(str, i, "expected string for key")
+      end
+      key, i = parse(str, i)
+      -- Read ':' delimiter
+      i = next_char(str, i, space_chars, true)
+      if str:sub(i, i) ~= ":" then
+        decode_error(str, i, "expected ':' after key")
+      end
+      i = next_char(str, i + 1, space_chars, true)
+      -- Read value
+      val, i = parse(str, i)
+      -- Set
+      res[key] = val
+      -- Next token
+      i = next_char(str, i, space_chars, true)
+      local chr = str:sub(i, i)
+      i = i + 1
+      if chr == "}" then break end
+      if chr ~= "," then decode_error(str, i, "expected '}' or ','") end
+    end
+    return res, i
+  end
+
+  local char_func_map = {
+    [ '"' ] = parse_string,
+    [ "0" ] = parse_number,
+    [ "1" ] = parse_number,
+    [ "2" ] = parse_number,
+    [ "3" ] = parse_number,
+    [ "4" ] = parse_number,
+    [ "5" ] = parse_number,
+    [ "6" ] = parse_number,
+    [ "7" ] = parse_number,
+    [ "8" ] = parse_number,
+    [ "9" ] = parse_number,
+    [ "-" ] = parse_number,
+    [ "t" ] = parse_literal,
+    [ "f" ] = parse_literal,
+    [ "n" ] = parse_literal,
+    [ "[" ] = parse_array,
+    [ "{" ] = parse_object,
+  }
+
+  parse = function(str, idx)
+    local chr = str:sub(idx, idx)
+    local f = char_func_map[chr]
+    if f then
+      return f(str, idx)
+    end
+    decode_error(str, idx, "unexpected character '" .. chr .. "'")
+  end
+
+  function json.decode(str)
+    if type(str) ~= "string" then
+      error("expected argument of type string, got " .. type(str))
+    end
+    local res, idx = parse(str, next_char(str, 1, space_chars, true))
+    idx = next_char(str, idx, space_chars, true)
+    if idx <= #str then
+      decode_error(str, idx, "trailing garbage")
+    end
+    return res
+  end
+
+  return json
+end
+
+json = json()
+
+local default_config = {
+  enableScriptsCB = false,
+  state3 = false,
+  healthCB = false,
+  armourCB = false,
+  healthregenspeed = 1,
+  armourregenspeed = 1,
+  healthhealamount = 10,
+  armourhealamount = 5,
+  ragdollCB = false,
+  ragdollLoopCB = false,
+  ragdollLoopSpeed = 1,
+  ragdollForceFlags = 1,
+  ragdollForceX = 10,
+  ragdollForceY = 10,
+  ragdollForceZ = 10,
+  ragdollType = 0,
+  walkCB = false,
+  walkSpeed = 1.2,
+  swimCB = false,
+  swimSpeed = 1.2,
+  drawMarker = false,
+  maxSpeedCB = false,
+  speedLimit = 1000,
+  forwardSpeedCB = false,
+  speedBoost = 100,
+  shiftDriftCB = false,
+  driftAmount = 1,
+  driftTyresCB = false,
+  autoFlipVehicleCB = false,
+  walkOnAirCB = false,
+  thermalVisionCB = false,
+  defaultThermalVisCV = false,
+  tVisStartFade = 1000,
+  tVisEndFade = 1000,
+  tVisWallThickness = 200,
+  tVisNoiseMin = 0.0,
+  tVisNoiseMax = 0.0,
+  tVisHilightIntensity = 0.5,
+  tVisHilightNoise = 0.0,
+  nightVisionCB = false,
+  defaultNightVisCV = false,
+  nVisLightRange = 100,
+  weaponScopeCB = false,
+  npcEspCB = false,
+  npcEspShowEnemiesCB = false,
+  npcEspBoxCB = true,
+  npCEspTracerCB = false,
+  npcEspDistance = 50,
+  npcEspColor = {1.0, 0.0, 0.0, 1.0},
+  notifyCB = true,
+  warnNotifyCB = true,
+  errorNotifyCB = true,
+  toolTipV2CB = true,
+  toolTipCB = false,
+  HSConsoleLogInfoCB = true,
+  HSConsoleLogWarnCB = true,
+  HSConsoleLogDebugCB = false,
+  currentTimeCB = false,
+  showSecondsCB = false,
+  disableTextCB = false,
+  timeTxtLocX = 0.94,
+  timeTxtLocY = 0.01,
+  timeTxtScale = 0.4,
+  timeTxtColor = {1.0, 1.0, 1.0, 1.0},
+  timeTxtDropShadowCB = true,
+  expandedRadarCB = false,
+  radarZoom = 0,
+}
+
+--[[
+
+  HS Config Functions
+
+]]--  
+function writeToFile(filename, data)
+  local file, err = io.open(filename, "w")
+  if file == nil then
+    log.warning("Failed to write to " .. filename)
+    gui.show_error("Harmless's Scripts", "Failed to write to " .. filename)
+    return false
+  end
+  file:write(json.encode(data))
+  file:close()
+  return true
+end
+
+function readFromFile(filename)
+  local file, err = io.open(filename, "r")
+  if file == nil then
+    return nil
+  end
+  local content = file:read("*all")
+  file:close()
+  return json.decode(content)
+end
+
+function checkAndCreateConfig(default_config)
+  local config = readFromFile("HSConfig.json")
+  if config == nil then
+    log.warning("Config file not found, creating a default config")
+    gui.show_warning("Harmless's Scripts", "Config file not found, creating a default config")
+    if not writeToFile("HSConfig.json", default_config) then
+      return false
+    end
+    config = default_config
+  end
+
+  for key, defaultValue in pairs(default_config) do
+    if config[key] == nil then
+      config[key] = defaultValue
+    end
+  end
+
+  if not writeToFile("HSConfig.json", config) then
+    return false
+  end
+  return true
+end
+
+function readAndDecodeConfig()
+  while not checkAndCreateConfig(default_config) do
+    -- Wait for the file to be created
+    os.execute("sleep " .. tonumber(1))
+    log.debug("Waiting for HSConfig.json to be created")
+  end
+  return readFromFile("HSConfig.json")
+end
+
+function saveToConfig(item_tag, value)
+  local t = readAndDecodeConfig()
+  if t then
+    t[item_tag] = value
+    if not writeToFile("HSConfig.json", t) then
+      log.debug("Failed to encode JSON to HSConfig.json")
+    end
+  end
+end
+
+function readFromConfig(item_tag)
+  local t = readAndDecodeConfig()
+  if t then
+    return t[item_tag]
+  else
+    log.debug("Failed to decode JSON from HSConfig.json")
+  end
+end
+
+function resetConfig(default_config)
+  writeToFile("HSConfig.json", default_config)
+end
 
 --[[
 
@@ -23,12 +510,43 @@ ExperimentalTab = HSSettings:add_tab("Experimentals")
 
 ]]--
 HSTab:add_imgui(function()
-  ImGui.Text("Version: 1.1.0")
+  ImGui.Text("Version: 1.2.0")
   ImGui.Text("Github:")
-  ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "Harmless05/harmless-lua")
+  ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "YimMenu-Lua/Harmless-Scripts")
   if ImGui.IsItemHovered() and ImGui.IsItemClicked(0) then
-    ImGui.SetClipboardText("https://github.com/Harmless05/harmless-lua")
+    ImGui.SetClipboardText("https://github.com/YimMenu-Lua/Harmless-Scripts")
     HSNotification("Copied to clipboard!")
+    HSConsoleLogInfo("Copied https://github.com/YimMenu-Lua/Harmless-Scripts to clipboard!")
+  end
+  HSshowTooltip("Click to copy to clipboard")
+  ImGui.Separator()
+  if ImGui.Button("Changelog") then
+    ImGui.OpenPopup("  Version 1.2.0")
+  end
+  if ImGui.BeginPopupModal("  Version 1.2.0", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse) then
+    local centerX, centerY = GetScreenCenter()
+    ImGui.SetWindowPos(centerX - 300, centerY - 200)
+    ImGui.SetWindowSize(600, 400)
+    ImGui.Text("Added:")
+    ImGui.TextWrapped("+ Config system :O yay 🎉 - Your settings will be saved and loaded on the next launch now!")
+    ImGui.TextWrapped("+ Experimental custom tooltip - Enabled by default so people can try it out. Any feedback would be greatly appreciated. (Settings Tab)")
+    ImGui.TextWrapped("+ ESP Tracers and Color (Misc Tab)")
+    ImGui.TextWrapped("+ Radar zoom and expanded radar (HUD Tab)")
+    ImGui.TextWrapped("+ The ability to view the changelog inside YimMenu (Harmless's Scripts Tab)")
+    ImGui.TextWrapped("+ A LOT of new functions to minimize and simplify the amount of code used (Dev stuff)")
+    ImGui.TextWrapped("+ Built-in JSON library for config system (Dev stuff)")
+    ImGui.Text("Fixed:")
+    ImGui.TextWrapped("* Armor regeneration not working")
+    ImGui.TextWrapped("* NPC ESP Tab not being visible and accessible")
+    ImGui.Text("Changed:")
+    ImGui.TextWrapped("~ Harmless's Scripts tab had the old URL links to this script")
+    ImGui.TextWrapped("~ Quick Options buttons have been compacted to improve visibility (Quick Options Tab)")
+    ImGui.TextWrapped("~ Notifications (info, warn, error) have been separated into individual toggles (Settings Tab)")
+    ImGui.TextWrapped("~ Compacted ImGui functions (Dev stuff)")
+    if ImGui.Button("Close") then
+        ImGui.CloseCurrentPopup()
+    end
+    ImGui.EndPopup()
   end
   ImGui.Separator()
   enableScriptsTab()
@@ -39,28 +557,17 @@ end)
   Enable "In Menu" Scripts -> Harmless's Scripts
 
 ]]--
-
-local enableScriptsCB = false
-local state3 = false
+local enableScriptsCB = readFromConfig("enableScriptsCB")
+local state3 = readFromConfig("state3")
 function enableScriptsTab()
-  local enableScripts, enableScriptsToggled = ImGui.Checkbox("Enable \"In Menu\" features separately (WIP)", enableScriptsCB)
-  if enableScriptsToggled then
-    enableScriptsCB = enableScripts
-    if not enableScripts then
-      state3 = false
-    end
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will allow you to enable/disable every script in the menu separately in their respective locations")
-  end
+  enableScriptsCB = HSCheckbox(ReverseBoolToStatus(enableScriptsCB) .. " \"In Menu\" features separately (WIP)", enableScriptsCB, "enableScriptsCB")
+  HSshowTooltip(ReverseBoolToStatus(enableScriptsCB) .. " every script in the menu separately in their respective locations", "WIP", {1, 0.7, 0.4, 1})
   if enableScriptsCB then
-    local newstate3, toggled3 = ImGui.Checkbox("(WIP)", state3)
-    if toggled3 then
-      state3 = newstate3
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Enable/Disable Regeneration in \"Self\"")
-    end
+    state3 = HSCheckbox(ReverseBoolToStatus(state3) .. " Regeneration in \"Self\"", state3, "state3")
+    HSshowTooltip(ReverseBoolToStatus(state3) .. " Regeneration in \"Self\"")
+  else
+    state3 = false
+    saveToConfig("state3", false)
   end
 end
 
@@ -71,15 +578,12 @@ end
 
 --]]
 SelfTab:add_imgui(function()
-  --ImGui.Spacing()
   playerRegenTab()
   ImGui.Spacing()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   ragdollPlayerTab()
   ImGui.Spacing()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   playerSpeedTab()
 end)
 
@@ -88,42 +592,34 @@ end)
   Player Regeneration -> Self Options
 
 --]]
-local healthCB = false
-local armourCB = false
-local healthregenspeed = 1 -- second(s)
-local armourregenspeed = 1 -- second(s)
-local healthhealamount = 10
-local armourhealamount = 5
+local healthCB = readFromConfig("healthCB")
+local armourCB = readFromConfig("armourCB")
+local healthregenspeed = readFromConfig("healthregenspeed") -- second(s)
+local armourregenspeed = readFromConfig("armourregenspeed") -- second(s)
+local healthhealamount = readFromConfig("healthhealamount")
+local armourhealamount = readFromConfig("armourhealamount")
 function playerRegenTab()
-  local newhealthCB, healthToggled = ImGui.Checkbox("Health Regeneration", healthCB)
-  if healthToggled then
-    healthCB = newhealthCB
-HSConsoleLogDebug("Health Regeneration " .. tostring(healthCB))
-  end
-  healthregenspeed, hSpeedUsed = ImGui.SliderFloat("Health Regen Speed", healthregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic)
-  healthhealamount, hAmountUsed = ImGui.SliderInt("Health Regen Amount", healthhealamount, 1, 50)
-  local newarmourCB, armourToggled = ImGui.Checkbox("Armor Regeneration", armourCB)
-  if armourToggled then
-    armourCB = newarmourCB
-HSConsoleLogDebug("Armor Regeneration " .. tostring(armourCB))
-  end
-  armourregenspeed, aSpeedUsed = ImGui.SliderFloat("Armor Regen Speed", armourregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic)
-  armourhealamount, aAmountUsed = ImGui.SliderInt("Armor Regen Amount", armourhealamount, 1, 50)
+  healthCB = HSCheckbox("Player Regeneration", healthCB, "healthCB")
+  healthregenspeed, healthregenspeedUsed = HSSliderFloat("Health Regen Speed", healthregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic, "healthregenspeed")
+  healthhealamount, healthhealamountUsed = HSSliderInt("Health Regen Amount", healthhealamount, 1, 50, "healthhealamount")
+  armourCB = HSCheckbox("Armor Regeneration", armourCB, "armourCB")
+  armourregenspeed, armourregenspeedUsed = HSSliderFloat("Armor Regen Speed", armourregenspeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic, "armourregenspeed")
+  armourhealamount, armourhealamountUsed = HSSliderInt("Armor Regen Amount", armourhealamount, 1, 50, "armourhealamount")
 end
 
-script.register_looped("HS Health Regeneration Loop", function(healthLoop)
+script.register_looped("HS Health Regeneration", function(healthLoop)
   if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) then
-HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
-      local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
-      if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
-      ENTITY.SET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID(), health + healthhealamount, 0, 0)
-      healthLoop:sleep(math.floor(healthregenspeed * 1000)) -- 1ms * 1000 to get seconds
+    HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
+    local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
+    if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
+    ENTITY.SET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID(), health + healthhealamount, 0, 0)
+    healthLoop:sleep(math.floor(healthregenspeed * 1000)) -- 1ms * 1000 to get seconds
   end
 end)
 
-script.register_looped("HS Armour Regeneration Loop", function(armorLoop)
-  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_PED_ID()) then
-HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
+script.register_looped("HS Armour Regeneration", function(armorLoop)
+  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) then
+    HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
     PED.ADD_ARMOUR_TO_PED(PLAYER.PLAYER_PED_ID(), armourhealamount)
     armorLoop:sleep(math.floor(armourregenspeed * 1000)) -- 1ms * 1000 to get seconds
   end
@@ -134,42 +630,32 @@ end)
   Ragdoll Player -> Self Options
 
 ]]--
-local ragdollCB = false
-local ragdollLoopCB = false
-local ragdollLoopSpeed = 1
-local ragdollForceFlags = 1
-local ragdollForceX = 10
-local ragdollForceY = 10
-local ragdollForceZ = 10
-local ragdollType = 0
+local ragdollCB = readFromConfig("ragdollCB")
+local ragdollLoopCB = readFromConfig("ragdollLoopCB")
+local ragdollLoopSpeed = readFromConfig("ragdollLoopSpeed")
+local ragdollForceFlags = readFromConfig("ragdollForceFlags")
+local ragdollForceX = readFromConfig("ragdollForceX")
+local ragdollForceY = readFromConfig("ragdollForceY")
+local ragdollForceZ = readFromConfig("ragdollForceZ")
+local ragdollType =readFromConfig("ragdollType")
+
 function ragdollPlayerTab()
   if ImGui.Button("Ragdoll Player [Once]") then
     ragdollPlayerOnce()
-HSConsoleLogDebug("Ragdolling Player Once")
+    HSConsoleLogDebug("Ragdolling Player Once")
   end
-  ImGui.SameLine(); local newRagdollLoopCB, ragdollLoopToggled = ImGui.Checkbox("Ragdoll Player [Loop]", ragdollLoopCB)
-  if ragdollLoopToggled then
-    ragdollLoopCB = newRagdollLoopCB
-HSConsoleLogDebug("Ragdoll Loop " .. tostring(ragdollLoopCB))
-  end
+  ImGui.SameLine(); ragdollLoopCB = HSCheckbox("Ragdoll Player [Loop]", ragdollLoopCB, "ragdollLoopCB")
   ImGui.Separator()
   ImGui.LabelText("Parameters", "Ragdoll Settings")
-  ragdollLoopSpeed, ragdollLoopSpeedUsed = ImGui.SliderFloat("Loop Speed", ragdollLoopSpeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic)
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Loop in seconds")
-  end
-  
-  ragdollForceFlags, ragdollForceFlagsUsed = ImGui.SliderInt("Ragdoll Force Flags", ragdollForceFlags, 0, 5)
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("0 = Weak Force\n1 = Strong Force\n2 = Same as 0\n3 = Same as 1\n4 = Weak Momentum\n5 = Strong Momentum")
-  end
-  ragdollForceX, ragdollForceXUsed = ImGui.SliderInt("Force X", ragdollForceX, 0, 100)
-  ragdollForceY, ragdollForceYUsed = ImGui.SliderInt("Force Y", ragdollForceY, 0, 100)
-  ragdollForceZ, ragdollForceZUsed = ImGui.SliderInt("Force Z", ragdollForceZ, 0, 100)
-  ragdollType, ragdollTypeUsed = ImGui.SliderInt("Ragdoll Type", ragdollType, 0, 3)
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("0 = Normal Ragdoll\n1 = Falls with stiff legs/body\n2 = Narrow leg stumble\n3 = Wide leg stumble")
-  end
+  ragdollLoopSpeed, ragdollLoopSpeedUsed = HSSliderFloat("Loop Speed", ragdollLoopSpeed, 0, 10, "%.1f", ImGuiSliderFlags.Logarithmic, "ragdollLoopSpeed")
+  HSshowTooltip("Change the speed at which the loop runs (in seconds)")
+  ragdollForceFlags, ragdollForceFlagsUsed = HSSliderInt("Ragdoll Force Flags", ragdollForceFlags, 0, 5, "ragdollForceFlags")
+  HSshowTooltip("0 = Weak Force\n1 = Strong Force\n2 = Same as 0\n3 = Same as 1\n4 = Weak Momentum\n5 = Strong Momentum")
+  ragdollForceX, ragdollForceXUsed = HSSliderInt("Force X", ragdollForceX, 0, 100, "ragdollForceX")
+  ragdollForceY, ragdollForceYUsed = HSSliderInt("Force Y", ragdollForceY, 0, 100, "ragdollForceY")
+  ragdollForceZ, ragdollForceZUsed = HSSliderInt("Force Z", ragdollForceZ, 0, 100, "ragdollForceZ")
+  ragdollType, ragdollTypeUsed = HSSliderInt("Ragdoll Type", ragdollType, 0, 3, "ragdollType")
+  HSshowTooltip("0 = Normal Ragdoll\n1 = Falls with stiff legs/body\n2 = Narrow leg stumble\n3 = Wide leg stumble")
 end
 
 function ragdollPlayerOnce()
@@ -203,34 +689,31 @@ end)
   Player Speed Multipliers -> Self Options
 
 ]]--
-local walkCB = false
-local walkSpeed = 1.2
-local swimCB = false
-local swimSpeed = 1.2
+local walkCB = readFromConfig("walkCB")
+local walkSpeed = readFromConfig("walkSpeed")
+local swimCB = readFromConfig("swimCB")
+local swimSpeed = readFromConfig("swimSpeed")
 
 function playerSpeedTab()
-  local newwalkCB, walkToggled = ImGui.Checkbox("Walk Speed Multiplier", walkCB)
-  if walkToggled then
-    walkCB = newwalkCB
-  end
-  walkSpeed, walkUsed = ImGui.SliderFloat("Walk speed multiplier", walkSpeed, 1, 1.49)
-  local newswimCB, swimToggled = ImGui.Checkbox("Swim Speed Multiplier", swimCB)
-  if swimToggled then
-    swimCB = newswimCB
-  end
-  swimSpeed, swimUsed = ImGui.SliderFloat("Swim speed multiplier", swimSpeed, 1, 1.49)
+  walkCB, walkCBUsed = HSCheckbox("Walk Speed Multiplier", walkCB, "walkCB")
+  walkSpeed, walkSpeedUsed = HSSliderFloat("Walk speed multiplier", walkSpeed, 1, 1.49, "%.1f", ImGuiSliderFlags.Logarithmic, "walkSpeed")
+  swimCB, swimCBUsed = HSCheckbox("Swim Speed Multiplier", swimCB, "swimCB")
+  swimSpeed, swimSpeedUsed = HSSliderFloat("Swim speed multiplier", swimSpeed, 1, 1.49, "%.1f", ImGuiSliderFlags.Logarithmic, "swimSpeed")
 end
 
-script.register_looped("HS Player Speed Multiplier Loop", function(speedLoop) -- These don't need to be looped, but it's easier to do it this way.
-  if walkCB then
-    PLAYER.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), walkSpeed)
-  else
-    PLAYER.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), 1.0)
-  end
-  if swimCB then
-    PLAYER.SET_SWIM_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), swimSpeed)
-  else
-    PLAYER.SET_SWIM_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), 1.0)
+script.run_in_fiber(function(playerSpeedMultiplier)
+  while true do
+    if walkCB then
+      PLAYER.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), walkSpeed)
+    else
+      PLAYER.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), 1.0)
+    end
+    if swimCB then
+      PLAYER.SET_SWIM_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), swimSpeed)
+    else
+      PLAYER.SET_SWIM_MULTIPLIER_FOR_PLAYER(PLAYER.PLAYER_ID(), 1.0)
+    end
+    playerSpeedMultiplier:yield()
   end
 end)
 
@@ -251,7 +734,7 @@ TeleportTab:add_imgui(function()
 end)
 
 local teleportLocations = {}
-local drawMarker = false
+local drawMarker = readFromConfig("drawMarker")
 
 function quickTeleportTab()
   local player = PLAYER.PLAYER_PED_ID()
@@ -285,11 +768,7 @@ function quickTeleportTab()
     end
 
     ImGui.Separator()
-
-    local newdrawMarker, drawMarkerToggled = ImGui.Checkbox("Draw Marker", drawMarker)
-    if drawMarkerToggled then
-      drawMarker = newdrawMarker
-    end
+    drawMarker, drawMarkerToggled = HSCheckbox("Draw Marker", drawMarker, "drawMarker")
   end
 end
 
@@ -311,8 +790,7 @@ end)
 
 PopularLocationsTab:add_imgui(function()
   PopularLocTab()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   --PopularLocCamView()
 end)
 
@@ -352,26 +830,26 @@ function PopularLocTab()
     table.insert(locationNames, location.name)
   end
 
-  newTeleportToLocCB, teleportToLocToggled = ImGui.Checkbox("Teleport to Location", TeleportToLocCB)
+  TeleportToLocCB, teleportToLocToggled = HSCheckbox("Teleport to Location", TeleportToLocCB, "TeleportToLocCB")
   if teleportToLocToggled then
-    TeleportToLocCB = newTeleportToLocCB
+    ViewLocAsCamCB = false
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Teleport to the location you selected")
+  HSshowTooltip("Teleport to the selected location")
+  ViewLocAsCamCB, viewLocAsCamToggled = HSCheckbox("View Location as Camera", ViewLocAsCamCB, "ViewLocAsCamCB")
+  if viewLocAsCamToggled then
+    TeleportToLocCB = false
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("View the location you selected as CAM\nPress \"F\" to exit")
-  end
+  HSshowTooltip("View the location you selected as CAM\nPress \"F\" to exit")
   if ViewLocAsCamCB then
     HSNotification("Press \"F\" to exit CAM")
   end
   
   local popularLocationsIndex = 0
   local current_item = popularLocationsIndex
-  local clicked = false
-  current_item, clicked = ImGui.Combo("", current_item, locationNames, #locationNames)
+  local wasUsed = false
+  local current_item, wasUsed = HSCombobox("", current_item, locationNames, #locationNames, 5, popularLocCombo)
 
-  if clicked then
+  if wasUsed then
     popularLocationsIndex = current_item
     local selectedLocation = popularLocations[current_item + 1]
     if TeleportToLocCB and not ViewLocAsCamCB then
@@ -389,14 +867,11 @@ end
 ]]--
 VehicleTab:add_imgui(function()
   setVehicleMaxSpeedTab()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   setVehicleForwardSpeedTab()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   shiftDriftTab()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   autoFlipVehicleTab()
 end)
 
@@ -405,17 +880,12 @@ end)
   Set Vehicle Max Speed -> Vehicle Options
 
 ]]--
-local maxSpeedCB = false
-local speedLimit = 1000
+local maxSpeedCB = readFromConfig("maxSpeedCB")
+local speedLimit = readFromConfig("speedLimit")
 function setVehicleMaxSpeedTab()
-  local newmaxSpeedCB, maxSpeedToggled = ImGui.Checkbox("Set Vehicle Max Speed", maxSpeedCB)
-  if maxSpeedToggled then
-    maxSpeedCB = newmaxSpeedCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will set your vehicle's max speed to the speed you set")
-  end
-  speedLimit, speedLimitUsed = ImGui.SliderInt("Speed Limit", speedLimit, 1, 1000)
+  maxSpeedCB, maxSpeedToggled = HSCheckbox("Set Vehicle Max Speed", maxSpeedCB, "maxSpeedCB")
+  HSshowTooltip("This will set your vehicle's max speed to the speed you set")
+  speedLimit, speedLimitUsed = HSSliderInt("Speed Limit", speedLimit, 1, 1000, "speedLimit")
 end
 
 script.register_looped("HS Set Vehicle Max Speed Loop", function(speedLoop)
@@ -434,21 +904,16 @@ end)
   Set Vehicle Forward Speed -> Vehicle Options
 
 ]]--
-local forwardSpeedCB = false
-local speedBoost = 100
+local forwardSpeedCB = readFromConfig("forwardSpeedCB")
+local speedBoost = readFromConfig("speedBoost")
 function setVehicleForwardSpeedTab()
-  local newforwardSpeedCB, forwardSpeedToggled = ImGui.Checkbox("Set Vehicle Forward Speed", forwardSpeedCB)
-  if forwardSpeedToggled then
-    forwardSpeedCB = newforwardSpeedCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("When enabled, press \"W\" to go forward at the speed you set")
-  end
-  speedBoost, speedBoostUsed = ImGui.SliderInt("Boosted Speed", speedBoost, 1, 1000)
+  forwardSpeedCB, forwardSpeedToggled = HSCheckbox("Set Vehicle Forward Speed", forwardSpeedCB, "forwardSpeedCB")
+  HSshowTooltip("When enabled, press \"W\" to go forward at the speed you set")
+  speedBoost, speedBoostUsed = HSSliderInt("Boosted Speed", speedBoost, 1, 1000, "speedBoost")
 end
 
 script.register_looped("HS Set Vehicle Forward Speed Loop", function(speedLoop)
-  if forwardSpeedCB and PAD.IS_CONTROL_PRESSED(0, 71) then
+  if forwardSpeedCB and PAD.IS_CONTROL_PRESSED(0, 71) and PED.IS_PED_IN_VEHICLE(PLAYER.PLAYER_PED_ID(), PED.GET_VEHICLE_PED_IS_IN(PLAYER.PLAYER_PED_ID(), true), false) then
     local speed = speedBoost
     local CurrentVeh = PED.GET_VEHICLE_PED_IS_IN(PLAYER.PLAYER_PED_ID(), true)
     VEHICLE.SET_VEHICLE_FORWARD_SPEED(CurrentVeh, speed)
@@ -460,34 +925,25 @@ end)
   Shift Drift -> Vehicle Options
 
 ]]--
-local shiftDriftCB = false
-local driftAmount = 0
-local driftTyresCB = false
+local shiftDriftCB = readFromConfig("shiftDriftCB")
+local driftAmount = readFromConfig("driftAmount")
+local driftTyresCB = readFromConfig("driftTyresCB")
 function shiftDriftTab()
-  local newshiftDriftCB, shiftDriftToggled = ImGui.Checkbox("Shift Drift", shiftDriftCB)
+  shiftDriftCB, shiftDriftToggled = HSCheckbox("Shift Drift", shiftDriftCB, "shiftDriftCB")
   if shiftDriftToggled then
-    shiftDriftCB = newshiftDriftCB
     if not shiftDriftCB then
       driftTyresCB = false
+      saveToConfig("driftTyresCB", false)
     end
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Press \"Shift\" to drift")
-  end
+  HSshowTooltip("Press \"Shift\" to drift")
   if shiftDriftCB then
-    local newdriftTyresCB, driftTyresToggled = ImGui.Checkbox("Use Low Grip Tyres", driftTyresCB)
-    if driftTyresToggled then
-      driftTyresCB = newdriftTyresCB
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will use GTAV's Low Grip Tyres for drifting instead")
-    end
+    driftTyresCB, driftTyresToggled = HSCheckbox("Use Low Grip Tyres", driftTyresCB, "driftTyresCB")
+    HSshowTooltip("This will use GTAV's Low Grip Tyres for drifting instead")
   end
   if not driftTyresCB then
-    driftAmount, driftAmountUsed = ImGui.SliderInt("Drift Amount", driftAmount, 0, 3)
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("0 = Loosest Drift\n1 = Loose Drift\n2 = Stiff Drift\n3 = Stiffest Drift")
-    end
+    driftAmount, driftAmountUsed = HSSliderInt("Drift Amount", driftAmount, 0, 3, "driftAmount")
+    HSshowTooltip("0 = Loosest Drift\n1 = Loose Drift (Recommended)\n2 = Stiff Drift\n3 = Stiffest Drift")
   end
 end
 
@@ -511,15 +967,10 @@ end)
   Auto Flip Vehicle -> Vehicle Options
 
 ]]--
-local autoFlipVehicleCB = false
+local autoFlipVehicleCB = readFromConfig("autoFlipVehicleCB")
 function autoFlipVehicleTab()
-  local newautoFlipVehicleCB, autoFlipVehicleToggled = ImGui.Checkbox("Auto Flip Vehicle", autoFlipVehicleCB)
-  if autoFlipVehicleToggled then
-    autoFlipVehicleCB = newautoFlipVehicleCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will automatically flip your vehicle upright if it is upside down")
-  end
+  autoFlipVehicleCB, autoFlipVehicleToggled = HSCheckbox("Auto Flip Vehicle", autoFlipVehicleCB, "autoFlipVehicleCB")
+  HSshowTooltip("This will automatically flip your vehicle upright if it is upside down")
 end
 
 script.register_looped("HS Auto Flip Vehicle Loop", function(flipLoop)
@@ -544,8 +995,7 @@ end)
 ]]--
 MiscTab:add_imgui(function()
   walkOnAirTab()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   playerVisionTab()
 end)
 
@@ -554,15 +1004,10 @@ end)
   Walk on Air -> Misc Options
 
 ]]--
-local walkOnAirCB = false
+local walkOnAirCB = readFromConfig("walkOnAirCB")
 function walkOnAirTab()
-  local newwalkOnAirCB, walkOnAirToggled = ImGui.Checkbox("Walk on Air", walkOnAirCB)
-  if walkOnAirToggled then
-    walkOnAirCB = newwalkOnAirCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Air Jesus")
-  end
+  walkOnAirCB, walkOnAirToggled = HSCheckbox("Walk on Air", walkOnAirCB, "walkOnAirCB")
+  HSshowTooltip("Air Jesus")
 end
 
 local object = nil
@@ -571,7 +1016,7 @@ local objectSpawned = false
 function spawnObject() -- Spawns the "air"
   gui.show_message("Controls", "Left SHIFT = go up\nLeft CTRL = go down")
   HSConsoleLogDebug("Spawning object")
-    local player = PLAYER.PLAYER_PED_ID()
+  local player = PLAYER.PLAYER_PED_ID()
   local coords = ENTITY.GET_ENTITY_COORDS(player, true)
   STREAMING.REQUEST_MODEL(-698352776)
   object = OBJECT.CREATE_OBJECT(-698352776, coords.x, coords.y, coords.z - 1.2, true, false, false)
@@ -585,32 +1030,32 @@ end
 
 function deleteObject()
   if object ~= nil then
-      HSConsoleLogDebug("Deleting object")
-            OBJECT.DELETE_OBJECT(object)
-      object = nil
+    HSConsoleLogDebug("Deleting object")
+    OBJECT.DELETE_OBJECT(object)
+    object = nil
   end
 end
 
 script.register_looped("HS Walk on Air Loop", function(walkOnAirLoop)
   if walkOnAirCB then
     if not objectSpawned then
-        spawnObject()
-        objectSpawned = true
+      spawnObject()
+      objectSpawned = true
     end
     if object ~= nil then
-        local player = PLAYER.PLAYER_PED_ID()
-        local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
-        local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true)
-        if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
-            ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
-            walkOnAirLoop:sleep(100)
-        elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
-            ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
-            walkOnAirLoop:sleep(50)
-        else
-            ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
-            walkOnAirLoop:sleep(50)
-        end
+      local player = PLAYER.PLAYER_PED_ID()
+      local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
+      local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true)
+      if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
+        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
+        walkOnAirLoop:sleep(100)
+      elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
+        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
+        walkOnAirLoop:sleep(50)
+      else
+        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
+        walkOnAirLoop:sleep(50)
+      end
     end
   else
     objectSpawned = false
@@ -624,104 +1069,57 @@ end)
 
 ]]--
 
-local thermalVisionCB = false
-local defaultThermalVisCV = false
-local tVisStartFade = 1000
-local tVisEndFade = 1000
-local tVisWallThickness = 200
-local tVisNoiseMin = 0.0
-local tVisNoiseMax = 0.0
-local tVisHilightIntensity = 0.5
-local tVisHilightNoise = 0.0
-local nightVisionCB = false
-local defaultNightVisCV = false
-local nVisLightRange = 100
-local weaponScopeCB = false
+local thermalVisionCB = readFromConfig("thermalVisionCB")
+local defaultThermalVisCV = readFromConfig("defaultThermalVisCV")
+local tVisStartFade = readFromConfig("tVisStartFade")
+local tVisEndFade = readFromConfig("tVisEndFade")
+local tVisWallThickness = readFromConfig("tVisWallThickness")
+local tVisNoiseMin = readFromConfig("tVisNoiseMin")
+local tVisNoiseMax = readFromConfig("tVisNoiseMax")
+local tVisHilightIntensity = readFromConfig("tVisHilightIntensity")
+local tVisHilightNoise = readFromConfig("tVisHilightNoise")
+local nightVisionCB = readFromConfig("nightVisionCB")
+local defaultNightVisCV = readFromConfig("defaultNightVisCV")
+local nVisLightRange = readFromConfig("nVisLightRange")
+local weaponScopeCB = readFromConfig("weaponScopeCB")
 
 function playerVisionTab()
-  local newthermalVisionCB, thermalVisionToggled = ImGui.Checkbox("Thermal Vision", thermalVisionCB)
+  thermalVisionCB, thermalVisionToggled = HSCheckbox("Thermal Vision", thermalVisionCB, "thermalVisionCB")
   if thermalVisionToggled then
-    thermalVisionCB = newthermalVisionCB
     nightVisionCB = false
+    saveToConfig("nightVisionCB", false)
   end
-  local newdefaultThermalVisCV, defaultThermalVisCVUsed = ImGui.Checkbox("Default Thermal Vision", defaultThermalVisCV)
-  if defaultThermalVisCVUsed then
-    defaultThermalVisCV = newdefaultThermalVisCV
-  end
+  defaultThermalVisCV, defaultThermalVisCVUsed = HSCheckbox("Default Thermal Vision", defaultThermalVisCV, "defaultThermalVisCV")
   if not defaultThermalVisCV then -- Thermal Vision Settings
     ImGui.LabelText("Parameters", "Thermal Vision Settings")
     ImGui.Spacing()
-    local newtVisStartFade, tVisStartFadeUsed = ImGui.SliderFloat("Start Fade", tVisStartFade, 0, 4000)
-    if tVisStartFadeUsed then
-      tVisStartFade = newtVisStartFade
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Bigger the value, the more you can see through walls (Where the fading of the thermal vision starts)")
-    end
-    local newtVisEndFade, tVisEndFadeUsed = ImGui.SliderFloat("End Fade", tVisEndFade, 0, 4000)
-    if tVisEndFadeUsed then
-      tVisEndFade = newtVisEndFade
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Bigger the value, the more you can see through walls (END value needs to be higher than START value)")
-    end
-    local newtVisWallThickness, tVisWallThicknessUsed = ImGui.SliderFloat("Wall Thickness", tVisWallThickness, 1, 200)
-    if tVisWallThicknessUsed then
-      tVisWallThickness = newtVisWallThickness
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("0 = You will not be able to see people behind walls\n 50+ = You can see everyone through the walls")
-    end
-    local newtVisNoiseMin, tVisNoiseMinUsed = ImGui.SliderFloat("Noise Min", tVisNoiseMin, 0, 100)
-    if tVisNoiseMinUsed then
-      tVisNoiseMin = newtVisNoiseMin
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Adds noise (Annoying)")
-    end
-    local newtVisNoiseMax, tVisNoiseMaxUsed = ImGui.SliderFloat("Noise Max", tVisNoiseMax, 0, 100)
-    if tVisNoiseMaxUsed then
-      tVisNoiseMax = newtVisNoiseMax
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Adds noise (Annoying)")
-    end
-    local newtVisHilightIntensity, tVisHilightIntensityUsed = ImGui.SliderFloat("Highlight Intensity", tVisHilightIntensity, 0, 10)
-    if tVisHilightIntensityUsed then
-      tVisHilightIntensity = newtVisHilightIntensity
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Shadow highlight basically (Makes dark areas more visible)")
-    end
-    local newtVisHilightNoise, tVisHilightNoiseUsed = ImGui.SliderFloat("Highlight Noise", tVisHilightNoise, 0, 100)
-    if tVisHilightNoiseUsed then
-      tVisHilightNoise = newtVisHilightNoise
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("Adds noise to highlights (Annoying)")
-    end
+    tVisStartFade, tVisStartFadeUsed = HSSliderFloat("Start Fade", tVisStartFade, 0, 4000, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisStartFade")
+    HSshowTooltip("Bigger the value, the more you can see through walls (Where the fading of the thermal vision starts)", "END value needs to be higher than START value", {1,0.7,0.4,1})
+    tVisEndFade, tVisEndFadeUsed = HSSliderFloat("End Fade", tVisEndFade, 0, 4000, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisEndFade")
+    HSshowTooltip("Bigger the value, the more you can see through walls.", "END value needs to be higher than START value", {1,0.7,0.4,1})
+    tVisWallThickness, tVisWallThicknessUsed = HSSliderFloat("Wall Thickness", tVisWallThickness, 1, 200, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisWallThickness")
+    HSshowTooltip("0 = You will not be able to see people behind walls\n 50+ = You can see everyone through the walls")
+    tVisNoiseMin, tVisNoiseMinUsed = HSSliderFloat("Noise Min", tVisNoiseMin, 0, 100, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisNoiseMin")
+    HSshowTooltip("Adds min noise (Annoying)")
+    tVisNoiseMax, tVisNoiseMaxUsed = HSSliderFloat("Noise Max", tVisNoiseMax, 0, 100, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisNoiseMax")
+    HSshowTooltip("Adds max noise (Annoying)")
+    tVisHilightIntensity, tVisHilightIntensityUsed = HSSliderFloat("Highlight Intensity", tVisHilightIntensity, 0, 10, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisHilightIntensity")
+    HSshowTooltip("Shadow highlight basically (Makes dark areas more visible)")
+    tVisHilightNoise, tVisHilightNoiseUsed = HSSliderFloat("Highlight Noise", tVisHilightNoise, 0, 100, "%.0f", ImGuiSliderFlags.Logarithmic, "tVisHilightNoise")
+    HSshowTooltip("Adds noise to highlights (Annoying)")
   end -- End of Thermal Vision Settings
-  ImGui.Separator()
-  ImGui.Spacing()
-  local newnightVisionCB, nightVisionToggled = ImGui.Checkbox("Night Vision", nightVisionCB)
+  ImGui.Separator();ImGui.Spacing()
+  nightVisionCB, nightVisionToggled = HSCheckbox("Night Vision", nightVisionCB, "nightVisionCB")
   if nightVisionToggled then
-    nightVisionCB = newnightVisionCB
     thermalVisionCB = false
+    saveToConfig("thermalVisionCB", false)
   end
-  ImGui.LabelText("Parameters", "Night Vision Settings") -- Night Vision Settings
+  ImGui.LabelText("Parameters", "Night Vision Settings")
   ImGui.Spacing()
-  local newnVisLightRange, nVisLightRangeUsed = ImGui.SliderFloat("Light Range", nVisLightRange, 0, 2000)
-  if nVisLightRangeUsed then
-    nVisLightRange = newnVisLightRange
-  end -- End of Night Vision Settings
+  nVisLightRange, nVisLightRangeUsed = HSSliderFloat("Light Range", nVisLightRange, 0, 2000, "%.0f", ImGuiSliderFlags.Logarithmic, "nVisLightRange")
   ImGui.Separator()
-  local newweaponScopeCB, weaponScopeToggled = ImGui.Checkbox("Enable On Weapon Scope", weaponScopeCB)
-  if weaponScopeToggled then
-    weaponScopeCB = newweaponScopeCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Enables Thermal/Night Vision when aiming down sights")
-  end
+  weaponScopeCB, weaponScopeToggled = HSCheckbox("Enable On Weapon Scope", weaponScopeCB, "weaponScopeCB")
+  HSshowTooltip("Enables Thermal/Night Vision when aiming down sights")
 end
 
 script.register_looped("HS Thermal Vision Loop", function(thermalLoop)
@@ -737,22 +1135,22 @@ script.register_looped("HS Thermal Vision Loop", function(thermalLoop)
   end
 
   local function resetThermalVision()
-    GRAPHICS.SEETHROUGH_RESET(true)
+    GRAPHICS.SEETHROUGH_RESET()
     GRAPHICS.SET_SEETHROUGH(true)
   end
 
-  if thermalVisionCB then
-      if weaponScopeCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) and not defaultThermalVisCV then -- Weapon Scope Thermal Vision
-          setThermalVision()
-      elseif not weaponScopeCB and not defaultThermalVisCV then -- Always On Thermal Vision
-          setThermalVision()
-      elseif defaultThermalVisCV and not weaponScopeCB then -- Default Thermal Vision
-          resetThermalVision()
-      elseif weaponScopeCB and defaultThermalVisCV and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) then -- Default Thermal Vision (Weapon Scope)
+  if thermalVisionCB and not nightVisionCB then
+    if weaponScopeCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) and not defaultThermalVisCV then -- Weapon Scope Thermal Vision
+      setThermalVision()
+    elseif not weaponScopeCB and not defaultThermalVisCV then -- Always On Thermal Vision
+      setThermalVision()
+    elseif defaultThermalVisCV and not weaponScopeCB then -- Default Thermal Vision
+      resetThermalVision()
+    elseif weaponScopeCB and defaultThermalVisCV and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), 78, true) and PAD.IS_CONTROL_PRESSED(0, 25) then -- Default Thermal Vision (Weapon Scope)
     resetThermalVision()
-      else
-          GRAPHICS.SET_SEETHROUGH(false)
-      end
+    else
+      GRAPHICS.SET_SEETHROUGH(false)
+    end
   else
     GRAPHICS.SET_SEETHROUGH(false)
   end
@@ -769,78 +1167,6 @@ script.register_looped("HS Night Vision Loop", function(nightLoop)
     GRAPHICS.SET_NIGHTVISION(false)
   end
 end)
---[[
-
-  NPC ESP -> Misc Options
-
-  Credits to @pierrelasse in GitHub for helping me with this :D
-
-]]--
-
-local npcEspCB = false
-local npcEspDistance = 50
-
-function npcEspTab()
-  local newnpcEspCB, npcEspToggled = ImGui.Checkbox("NPC ESP", npcEspCB)
-  if npcEspToggled then
-    npcEspCB = newnpcEspCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will draw a box around NPCs")
-  end
-  npcEspDistance, npcEspDistanceUsed = ImGui.SliderFloat("ESP Max Distance", npcEspDistance, 0, 150)
-end
-
-function calculate_distance(x1, y1, z1, x2, y2, z2)
-  return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2 + (z2 - z1) ^ 2)
-end
-
-function draw_rect(x, y, width, height)
-  GRAPHICS.DRAW_RECT(x, y, width, height, 255, 0, 0, 255, false)
-end
-
-script.register_looped("HS NPC ESP Loop", function(npcEspLoop)
-  if npcEspCB then
-    local player = PLAYER.PLAYER_PED_ID()
-    local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
-
-    local allPeds = entities.get_all_peds_as_handles()
-    for i, ped in ipairs(allPeds) do
-      if ENTITY.DOES_ENTITY_EXIST(ped) and not PED.IS_PED_A_PLAYER(ped) and PED.IS_PED_HUMAN(ped) and not PED.IS_PED_DEAD_OR_DYING(ped, true) then
-        local pedCoords = ENTITY.GET_ENTITY_COORDS(ped, true)
-        HSConsoleLogDebug("Found ped " .. ped .. " at coordinates " .. tostring(pedCoords))
-        local distance = SYSTEM.VDIST(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z)
-        if distance <= npcEspDistance then
-          local success, screenX, screenY = GRAPHICS.GET_SCREEN_COORD_FROM_WORLD_COORD(pedCoords.x, pedCoords.y, pedCoords.z, 0.0, 0.0)
-          HSConsoleLogDebug("Screen coords: " .. tostring(screenX) .. ", " .. tostring(screenY))
-          if success then
-            -- Calculate the distance from the ped to the camera
-            local camCoords = CAM.GET_GAMEPLAY_CAM_COORD()
-            HSConsoleLogDebug("Camera coords: " .. tostring(camCoords))
-            local distanceToCam = calculate_distance(pedCoords.x, pedCoords.y, pedCoords.z, camCoords.x, camCoords.y, camCoords.z)
-            HSConsoleLogDebug("Distance to ped " .. ped .. " is " .. distanceToCam)
-
-            -- Size of the box based on the distance to the camera
-            local boxSize = 2 * (1 / distanceToCam)
-
-            -- Minimum box thickness
-            local minThickness = 0.001
-
-            -- Thickness of the outline based on the distance to the camera, with a lower limit
-            local thickness = math.max(minThickness, 0.0015 * (1 / distanceToCam))
-            HSConsoleLogDebug("Box thickness: " .. thickness)
-
-            -- Call the functions to draw the box
-            draw_rect(screenX, screenY - boxSize / 2, boxSize / 4, thickness) -- Top
-            draw_rect(screenX, screenY + boxSize / 2, boxSize / 4, thickness) -- Bottom
-            draw_rect(screenX - boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Left
-            draw_rect(screenX + boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Right
-          end
-        end
-      end
-    end
-  end
-end)
   
 --[[
 
@@ -849,9 +1175,7 @@ end)
 ]]--
 QuickTab:add_imgui(function()
   ImGui.Text("YimMenu Hotkeys exsist for all of these, but what if you don't want to use hotkeys?")
-  ImGui.Spacing()
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Spacing();ImGui.Separator();ImGui.Spacing()
   SelfPed = PLAYER.PLAYER_PED_ID()
   -- Self Options
   ImGui.BulletText("Self Options")
@@ -862,21 +1186,22 @@ QuickTab:add_imgui(function()
   if ImGui.Button("Heal Player") then
     command.call("heal",{})
   end
-  if ImGui.IsItemHovered() then
     HSshowTooltip("This will give max health and armor to the player")
-  end
-  if ImGui.Button("Give All Weapons") then
+    if ImGui.Button("Give All Weapons") then
     command.call("giveweaps",{SelfPed})
   end
+  HSshowTooltip("Give all weapons only works Online")
   if ImGui.Button("Give All Ammo") then
     command.call("giveammo",{SelfPed})
   end
+  HSshowTooltip("Give all ammo only works Online")
   if ImGui.Button("Fill Ammo") then
     command.call("fillammo",{})
   end
   if ImGui.Button("Give Max Armor") then
     command.call("givearmor",{SelfPed})
   end
+  HSshowTooltip("Give max armor only works Online")
     if ImGui.Button("Clean Player") then
     command.call("clean",{})
   end
@@ -894,6 +1219,7 @@ QuickTab:add_imgui(function()
   if ImGui.Button("TP to Waypoint") then
     command.call("waypointtp",{})
   end
+  ImGui.SameLine()
   if ImGui.Button("TP to Objective") then
     command.call("objectivetp",{})
   end
@@ -906,19 +1232,23 @@ QuickTab:add_imgui(function()
   if ImGui.Button("Upgrade Vehicle") then
     command.call("upgradeveh",{SelfPed})
   end
+  HSshowTooltip("Upgrade vehicle only works Online")
+  ImGui.SameLine()
   if ImGui.Button("Downgrade Vehicle") then
     command.call("downgradeveh",{SelfPed})
   end
+  HSshowTooltip("Downgrade vehicle only works Online")
   if ImGui.Button("Bring PV") then
     command.call("bringpv",{})
   end
+  ImGui.SameLine()
   if ImGui.Button("TP into Personal Vehicle") then
     command.call("pvtp",{})
   end
   ImGui.Separator()
   -- Misc Options
   ImGui.BulletText("Misc")
-if ImGui.Button("Leave Online") then
+  if ImGui.Button("Leave Online") then
     NETWORK.NETWORK_SESSION_LEAVE_SINGLE_PLAYER()
   end
   ImGui.PushStyleColor(ImGuiCol.Text, 1, 0.8, 0.45, 1)
@@ -938,47 +1268,72 @@ end)
   HS Settings
 
 ]]
-local notifyCB = true
-local toolTipCB = true
-local HSConsoleLogInfoCB = true
-local HSConsoleLogWarnCB = true
-local HSConsoleLogDebugCB = false
+
+local notifyCB = readFromConfig("notifyCB")
+local warnNotifyCB = readFromConfig("warnNotifyCB")
+local errorNotifyCB = readFromConfig("errorNotifyCB")
+local toolTipV2CB = readFromConfig("toolTipV2CB")
+local toolTipCB = readFromConfig("toolTipCB")
+local HSConsoleLogInfoCB = readFromConfig("HSConsoleLogInfoCB")
+local HSConsoleLogWarnCB = readFromConfig("HSConsoleLogWarnCB")
+local HSConsoleLogDebugCB = readFromConfig("HSConsoleLogDebugCB")
 HSSettings:add_imgui(function()
-  local newNotifyCB, notifyToggled = ImGui.Checkbox("HS Notifications", notifyCB)
-  if notifyToggled then
-    notifyCB = newNotifyCB
+  notifyCB, notifyToggled = HSCheckbox("HS Notifications", notifyCB, "notifyCB")
+  if not notifyCB then
+    warnNotifyCB = false
+    saveToConfig("warnNotifyCB", false)
+    errorNotifyCB = false
+    saveToConfig("errorNotifyCB", false)
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will enable/disable notifications for Harmless's Scripts")
+  HSshowTooltip(ReverseBoolToStatus(notifyCB) .. " notifications for Harmless's Scripts")
+  if notifyCB then
+    warnNotifyCB, warnNotifyToggled = HSCheckbox("HS Warning Notifications", warnNotifyCB, "warnNotifyCB")
+    HSshowTooltip(ReverseBoolToStatus(warnNotifyCB) .. " warning notifications for Harmless's Scripts")
+    errorNotifyCB, errorNotifyToggled = HSCheckbox("HS Error Notifications", errorNotifyCB, "errorNotifyCB")
+    HSshowTooltip(ReverseBoolToStatus(errorNotifyCB) .. " error notifications for Harmless's Scripts")
   end
-  local newToolTipCB, toolTipToggled = ImGui.Checkbox("HS Tooltips", toolTipCB)
-  if toolTipToggled then
-    toolTipCB = newToolTipCB
+  toolTipV2CB, toolTipV2Toggled = HSCheckbox("HS ToolTip V2", toolTipV2CB, "toolTipV2CB")
+  if toolTipV2CB then
+    toolTipCB = false
+    saveToConfig("toolTipCB", false)
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will enable/disable tooltips for Harmless's Scripts")
+  HSshowTooltip(ReverseBoolToStatus(toolTipV2CB) .. " exerimental version of custom tooltips", "This is a custom-made tooltip for Harmless's Scripts. It's currently in an experimental phase, so you may encounter some bugs and glitches.", {1, 0.4, 0.4, 1})
+  toolTipCB, toolTipToggled = HSCheckbox("HS Tooltips", toolTipCB, "toolTipCB")
+  if toolTipCB then
+    toolTipV2CB = false
+    saveToConfig("toolTipV2CB", false)
   end
-  local newHSConsoleLogInfoCB, HSConsoleLogInfoToggled = ImGui.Checkbox("HS Console Logs (Info)", HSConsoleLogInfoCB)
-  if HSConsoleLogInfoToggled then
-    HSConsoleLogInfoCB = newHSConsoleLogInfoCB
+  HSshowTooltip(ReverseBoolToStatus(toolTipCB) .. " tooltips for Harmless's Scripts")
+  HSConsoleLogInfoCB, HSConsoleLogInfoToggled = HSCheckbox("HS Console Logs (Info)", HSConsoleLogInfoCB, "HSConsoleLogInfoCB")
+  HSshowTooltip(ReverseBoolToStatus(HSConsoleLogInfoCB) .. " info console logs for Harmless's Scripts")
+  HSConsoleLogWarnCB, HSConsoleLogWarnToggled = HSCheckbox("HS Console Logs (Warning)", HSConsoleLogWarnCB, "HSConsoleLogWarnCB")
+  HSshowTooltip(ReverseBoolToStatus(HSConsoleLogWarnCB) .. " warning console logs for Harmless's Scripts")
+  HSConsoleLogDebugCB, HSConsoleLogDebugToggled = HSCheckbox("HS Console Logs (Debug)", HSConsoleLogDebugCB, "HSConsoleLogDebugCB")
+  HSshowTooltip(ReverseBoolToStatus(HSConsoleLogDebugCB) .. " debug console logs for Harmless's Scripts")
+  ImGui.PushStyleColor(ImGuiCol.Text, 1, 0, 0, 1)
+  if ImGui.Button("Reset Config") then
+    ImGui.OpenPopup("Reset Config?")
   end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Enable/disable YimMenu info console logs for Harmless's Scripts")
+  ImGui.PopStyleColor()
+  if ImGui.BeginPopupModal("Reset Config?", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse) then
+    local centerX, centerY = GetScreenCenter()
+    ImGui.SetWindowPos(centerX - 100, centerY - 75)
+    ImGui.SetWindowSize(200, 150)
+    ImGui.TextColored(1, 0, 0, 1, "Are you sure you want\n to reset the config?")
+    ImGui.Spacing()
+    if HSButton("YES", {1, 0, 0, 1}) then
+      resetConfig()
+      ImGui.CloseCurrentPopup()
+      HSConsoleLogWarn("Please reload the Lua script to apply changes!")
+      HSWarnNotif("Please reload the Lua script to apply changes!")
+    end
+    ImGui.SameLine();ImGui.Dummy(80, 1);ImGui.SameLine()
+    if HSButton("NO", {0.9, 1, 0.9, 1}) then
+      ImGui.CloseCurrentPopup()
+    end
+    ImGui.EndPopup()
   end
-  local newHSConsoleLogWarnCB, HSConsoleLogWarnToggled = ImGui.Checkbox("HS Console Logs (Warning)", HSConsoleLogWarnCB)
-  if HSConsoleLogWarnToggled then
-    HSConsoleLogWarnCB = newHSConsoleLogWarnCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Enable/disable YimMenu warning console logs for Harmless's Scripts")
-  end
-  local newHSConsoleLogDebugCB, HSConsoleLogDebugToggled = ImGui.Checkbox("HS Console Logs (Debug)", HSConsoleLogDebugCB)
-  if HSConsoleLogDebugToggled then
-    HSConsoleLogDebugCB = newHSConsoleLogDebugCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("Enable/disable YimMenu debug console logs for Harmless's Scripts")
-  end
+  HSshowTooltip("Reset the Harmless's Scripts options to default config", "You have to reload the Lua script to see changes!", {1, 0.7, 0.4, 1})
 end)
 
 --[[
@@ -989,67 +1344,42 @@ end)
 
 HudTab:add_imgui(function()
   ImGui.Text("HUD Options")
-  ImGui.Separator()
-  ImGui.Spacing()
+  ImGui.Separator();ImGui.Spacing()
   showTimeTab()
+  ImGui.Separator();ImGui.Spacing()
+  showExpandedRadar()
 end)
-
 
 --[[
 
-  Show IRL Time -> HUD Tab
+  Show Local Time -> HUD Tab
 
 ]]--
 
-local currentTimeCB = false
-local showSecondsCB = false
-local disableTextCB = false
-local timeTxtLocX = 0.94
-local timeTxtLocY = 0.01
-local timeTxtScale = 0.4
-local timeTxtColor = {1.0, 1.0, 1.0, 1.0}
-local timeTxtDropShadowCB = true
+local currentTimeCB = readFromConfig("currentTimeCB")
+local showSecondsCB = readFromConfig("showSecondsCB")
+local disableTextCB = readFromConfig("disableTextCB")
+local timeTxtLocX = readFromConfig("timeTxtLocX")
+local timeTxtLocY = readFromConfig("timeTxtLocY")
+local timeTxtScale = readFromConfig("timeTxtScale")
+local timeTxtColor = readFromConfig("timeTxtColor")
+local timeTxtDropShadowCB = readFromConfig("timeTxtDropShadowCB")
 
 function showTimeTab()
-  local newcurrentTimeCB, currentTimeToggled = ImGui.Checkbox("Show Current Time", currentTimeCB)
-  if currentTimeToggled then
-    currentTimeCB = newcurrentTimeCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will draw the current time on your screen")
-  end
+  currentTimeCB, currentTimeToggled = HSCheckbox("Show Local Time", currentTimeCB, "currentTimeCB")
+  HSshowTooltip("Draws your local time on your screen")
   if currentTimeCB then
-    local newshowSecondsCB, showSecondsToggled = ImGui.Checkbox("Show Seconds", showSecondsCB)
-    if showSecondsToggled then
-      showSecondsCB = newshowSecondsCB
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will show seconds in the time")
-    end
-    local newdisableTextCB, disableTextToggled = ImGui.Checkbox("Disable Text", disableTextCB)
-    if disableTextToggled then
-      disableTextCB = newdisableTextCB
-    end
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will disable the \"Current time:\" text")
-    end
-    timeTxtLocX, timeTxtLocXUsed = ImGui.SliderFloat("Text Location X", timeTxtLocX, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic)
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will change the X location of the text")
-    end
-    timeTxtLocY, timeTxtLocYUsed = ImGui.SliderFloat("Text Location Y", timeTxtLocY, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic)
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will change the Y location of the text")
-    end
-    timeTxtScale, timeTxtScaleUsed = ImGui.SliderFloat("Text Scale", timeTxtScale, 0.1, 1, "%.1f", ImGuiSliderFlags.Logarithmic)
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("This will change the scale of the text")
-    end
-    timeTxtColor, timeTxtColorUsed = ImGui.ColorEdit4("Text Color", timeTxtColor)
-    local newtimeTxtDropShadowCB, timeTxtDropShadowToggled = ImGui.Checkbox("Text Drop Shadow", timeTxtDropShadowCB)
-    if timeTxtDropShadowToggled then
-      timeTxtDropShadowCB = newtimeTxtDropShadowCB
-    end
+    showSecondsCB, showSecondsToggled = HSCheckbox("Show Seconds", showSecondsCB, "showSecondsCB")
+    disableTextCB, disableTextToggled = HSCheckbox(BoolToStatus(disableTextCB) .. " Text", disableTextCB, "disableTextCB")
+    HSshowTooltip(BoolToStatus(disableTextCB) .. " the \"Current time:\" text")
+    timeTxtLocX, timeTxtLocXUsed = HSSliderFloat("Text Location X", timeTxtLocX, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic, "timeTxtLocX")
+    HSshowTooltip("X (left/right) location of the text")
+    timeTxtLocY, timeTxtLocYUsed = HSSliderFloat("Text Location Y", timeTxtLocY, 0.01, 1, "%.2f", ImGuiSliderFlags.Logarithmic, "timeTxtLocY")
+    HSshowTooltip("Y (up/down) location of the text")
+    timeTxtScale, timeTxtScaleUsed = HSSliderFloat("Text Scale", timeTxtScale, 0.1, 1, "%.1f", ImGuiSliderFlags.Logarithmic, "timeTxtScale")
+    HSshowTooltip("Scale of the text")
+    timeTxtColor, timeTxtColorUsed = HSColorEdit4("Text Color", timeTxtColor, "timeTxtColor")
+    timeTxtDropShadowCB, timeTxtDropShadowToggled = HSCheckbox("Text Drop Shadow", timeTxtDropShadowCB, "timeTxtDropShadowCB")
   end
 end
 
@@ -1093,6 +1423,125 @@ script.register_looped("HS Show Time Loop", function(showTimeLoop)
   end
 end)
 
+--[[
+
+  Show Expanded Radar -> HUD Tab
+
+]]--
+
+local expandedRadarCB = readFromConfig("expandedRadarCB")
+local radarZoom = readFromConfig("radarZoom")
+
+function showExpandedRadar()
+  expandedRadarCB, expandedRadarToggled = HSCheckbox("Show Expanded Radar", expandedRadarCB, "expandedRadarCB")
+  HSshowTooltip(ReverseBoolToStatus(expandedRadarCB) .. " expanded radar on your screen", "Currently not working in Online", {1,0.7,0.4,1})
+  radarZoom, radarZoomUsed = HSSliderInt("Radar Zoom", radarZoom, 0, 1400, "radarZoom")
+  HSshowTooltip("This will change the zoom of the radar\n0 = Default\n1400 = Max Zoomed Out")
+  if radarZoom then
+    HUD.SET_RADAR_ZOOM(radarZoom)
+  end
+end
+
+script.run_in_fiber(function(expandedRadar)
+  while true do
+    if expandedRadarCB then
+      HUD.SET_BIGMAP_ACTIVE(true, false)
+    else
+      HUD.SET_BIGMAP_ACTIVE(false, false)
+    end
+    expandedRadar:yield()
+  end
+end)
+
+--[[
+
+  NPC ESP -> HS Settings
+
+  Credits to @pierrelasse in GitHub for helping me with this :D
+
+]]--
+
+ESPTab:add_imgui(function()
+  npcEspTab()
+end)
+
+local npcEspCB = readFromConfig("npcEspCB")
+local npcEspShowEnemiesCB = readFromConfig("npcEspShowEnemiesCB")
+local npcEspBoxCB = readFromConfig("npcEspBoxCB")
+local npcEspTracerCB = readFromConfig("npCEspTracerCB")
+local npcEspDistance = readFromConfig("npcEspDistance")
+local npcEspColor = readFromConfig("npcEspColor")
+
+function npcEspTab()
+  npcEspCB, npcEspToggled = HSCheckbox("NPC ESP", npcEspCB, "npcEspCB")
+  HSshowTooltip({message = "This will draw a box around NPCs"})
+  npcEspShowEnemiesCB, npcEspShowEnemiesCBToggled = HSCheckbox("Show Only Enemies", npcEspShowEnemiesCB, "npcEspShowEnemies")
+  npcEspBoxCB, npcEspBoxCBToggled = HSCheckbox("NPC ESP Box", npcEspBoxCB, "npcEspBoxCB")
+  npcEspTracerCB, npcEspTracerCBToggled = HSCheckbox("NPC ESP Tracer", npcEspTracerCB, "npCEspTracerCB")
+  HSshowTooltip({message = "This will draw a line from the NPC to the player"})
+  npcEspDistance, npcEspDistanceUsed = HSSliderFloat("ESP Max Distance", npcEspDistance, 0, 150, "%.0f", ImGuiSliderFlags.Logarithmic, "npcEspDistance")
+  HSshowTooltip({message = "This will set how far away the NPC ESP will work"})
+  npcEspColor, npcEspColorUsed = HSColorEdit4("ESP Color", npcEspColor, "npcEspColor")
+end
+
+function calculate_distance(x1, y1, z1, x2, y2, z2)
+  return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2 + (z2 - z1) ^ 2)
+end
+
+function draw_rect(x, y, width, height)
+  GRAPHICS.DRAW_RECT(x, y, width, height, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255), false)
+end
+
+script.register_looped("HS NPC ESP Loop", function(npcEspLoop)
+  if npcEspCB then
+    local player = PLAYER.PLAYER_PED_ID()
+    local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
+    local allPeds = entities.get_all_peds_as_handles()
+    for i, ped in ipairs(allPeds) do
+      if ENTITY.DOES_ENTITY_EXIST(ped) and not PED.IS_PED_A_PLAYER(ped) and PED.IS_PED_HUMAN(ped) and not PED.IS_PED_DEAD_OR_DYING(ped, true) then
+        local pedCoords = ENTITY.GET_ENTITY_COORDS(ped, true)
+        
+        HSConsoleLogDebug("Found ped " .. ped .. " at coordinates " .. tostring(pedCoords))
+        local distance = SYSTEM.VDIST(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z)
+        if distance <= npcEspDistance then
+          local pedEnemy = PED.IS_PED_IN_COMBAT(ped, player)
+          if pedEnemy then
+            HSConsoleLogDebug("Ped is an enemy: " .. tostring(pedEnemy))
+          end
+          local success, screenX, screenY = GRAPHICS.GET_SCREEN_COORD_FROM_WORLD_COORD(pedCoords.x, pedCoords.y, pedCoords.z, 0.0, 0.0)
+          HSConsoleLogDebug("Screen coords: " .. tostring(screenX) .. ", " .. tostring(screenY))
+          if success and npcEspBoxCB and (not npcEspShowEnemiesCB or pedEnemy) then
+            -- Calculate the distance from the ped to the camera
+            local camCoords = CAM.GET_GAMEPLAY_CAM_COORD()
+            HSConsoleLogDebug("Camera coords: " .. tostring(camCoords))
+            local distanceToCam = calculate_distance(pedCoords.x, pedCoords.y, pedCoords.z, camCoords.x, camCoords.y, camCoords.z)
+            HSConsoleLogDebug("Distance to ped " .. ped .. " is " .. distanceToCam)
+
+            -- Size of the box based on the distance to the camera
+            local boxSize = 2 * (1 / distanceToCam)
+
+            -- Minimum box thickness
+            local minThickness = 0.001
+
+            -- Thickness of the outline based on the distance to the camera, with a lower limit
+            local thickness = math.max(minThickness, 0.0015 * (1 / distanceToCam))
+            HSConsoleLogDebug("Box thickness: " .. thickness)
+
+            -- Call the functions to draw the box
+            draw_rect(screenX, screenY - boxSize / 2  + 0.001, boxSize / 4, thickness) -- Top
+            draw_rect(screenX, screenY + boxSize / 2  - 0.001, boxSize / 4, thickness) -- Bottom
+            draw_rect(screenX - boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Left
+            draw_rect(screenX + boxSize / 8, screenY, thickness, boxSize - 2 * thickness) -- Right
+          end
+          -- Draw a line from the player to the NPC if the tracer is enabled
+          if success and npcEspTracerCB then
+            GRAPHICS.DRAW_LINE(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255))
+          end
+        end
+      end
+    end
+  end
+end)
 
 --[[
 
@@ -1102,119 +1551,33 @@ end)
 ExperimentalTab:add_imgui(function()
   ImGui.Text("Experimental features that I'm working on and may add to this tab.")
   ImGui.Text("Feel free to test them out and give any feedback.")
-  ImGui.TextColored(1,0,0,1,"You  will encounter bugs and crashes.")
-  ImGui.Separator()
-  ImGui.Spacing()
-  ImGui.TextColored(1,0,0,1,"Broken, Crashes game")
-  vehicleRampTab()
-  ImGui.Separator()
-  ImGui.TextColored(1,0,0,1,"Broken/Not working (Possibly breaks Yim's weather sys)")
-  snowWeatherTab()
 end)
-
---[[
-
-  Vehicle Ramps -> Vehicle Options
-
-]]--
-local vehicleRampCB = false
-local vehicleRampType = 0
-
-function vehicleRampTab()
-  local newvehicleRampCB, vehicleRampToggled = ImGui.Checkbox("Vehicle Ramp", vehicleRampCB)
-  if vehicleRampToggled then
-    vehicleRampCB = newvehicleRampCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will spawn a ramp in front of your vehicle")
-  end
-  if vehicleRampCB then
-    vehicleRampType, vehicleRampTypeUsed = ImGui.SliderInt("Ramp Type", vehicleRampType, 0, 3)
-    if ImGui.IsItemHovered() then
-      HSshowTooltip("0 = Basic Ramp\n1 = Ramp 1\n2 = Ramp 2\n3 = Ramp 3")
-    end
-  end
-end
-
-script.register_looped("HS Vehicle Ramp Loop", function(vehicleRampLoop)
-  if vehicleRampCB then
-    local players = PLAYER.PLAYER_PED_ID()
-    local vehicle = PED.GET_VEHICLE_PED_IS_IN(players, false)
-    if vehicle ~= 0 then
-      local coords = ENTITY.GET_ENTITY_COORDS(vehicle, true)
-      local iBoneIndex = PED.GET_PED_BONE_INDEX(vehicle, 0)
-      local basicRampHash = MISC.GET_HASH_KEY("lts_prop_lts_ramp_02")
-      STREAMING.REQUEST_MODEL(basicRampHash)
-      local object = OBJECT.CREATE_OBJECT(basicRampHash, coords.x, coords.y, coords.z, true, false, false)
-      ENTITY.ATTACH_ENTITY_TO_ENTITY(object, vehicle, iBoneIndex, coords.x, coords.y, coords.z, 0, 0, 0, false, true, true, false, 1, true, 0)
-    end
-  end
-end)
-
---[[
-
-  Snow Weather -> World Options
-
-]]--
-local snowWeatherCB = false
-function snowWeatherTab()
-  local newsnowWeatherCB, snowWeatherToggled = ImGui.Checkbox("Snow Weather", snowWeatherCB)
-  if snowWeatherToggled then
-    snowWeatherCB = newsnowWeatherCB
-  end
-  if ImGui.IsItemHovered() then
-    HSshowTooltip("This will enable/disable snow weather")
-  end
-end
-
-script.register_looped("HS Snow Weather Loop", function(snowLoop)
-  if snowWeatherCB then
-    MISC.SET_WEATHER_TYPE_PERSIST("XMAS")
-    MISC.SET_WEATHER_TYPE_NOW_PERSIST("XMAS")
-    MISC.SET_WEATHER_TYPE_NOW("XMAS")
-    MISC.SET_OVERRIDE_WEATHER("XMAS")
-    STREAMING.REQUEST_NAMED_PTFX_ASSET("core_snow")
-		GRAPHICS.USE_PARTICLE_FX_ASSET("core_snow")
-		AUDIO.REQUEST_SCRIPT_AUDIO_BANK("ICE_FOOTSTEPS", true, -1)
-		AUDIO.REQUEST_SCRIPT_AUDIO_BANK("SNOW_FOOTSTEPS", true, -1)
-    AUDIO.REQUEST_SCRIPT_AUDIO_BANK("core_snow", true, -1)
-    GRAPHICS.USE_SNOW_FOOT_VFX_WHEN_UNSHELTERED(true)
-    GRAPHICS.USE_SNOW_WHEEL_VFX_WHEN_UNSHELTERED(true)
-  else
-    MISC.CLEAR_OVERRIDE_WEATHER()
-    MISC.SET_WEATHER_TYPE_NOW_PERSIST("CLEAR")
-    MISC.SET_WEATHER_TYPE_NOW("CLEAR")
-    MISC.SET_WEATHER_TYPE_PERSIST("CLEAR")
-    STREAMING.REMOVE_NAMED_PTFX_ASSET("core_snow")
-    GRAPHICS.RESET_PARTICLE_FX_OVERRIDE("core_snow")
-    AUDIO.RELEASE_NAMED_SCRIPT_AUDIO_BANK("ICE_FOOTSTEPS")
-    AUDIO.RELEASE_NAMED_SCRIPT_AUDIO_BANK("SNOW_FOOTSTEPS")
-    AUDIO.RELEASE_NAMED_SCRIPT_AUDIO_BANK("core_snow")
-    GRAPHICS.USE_SNOW_FOOT_VFX_WHEN_UNSHELTERED(false)
-    GRAPHICS.USE_SNOW_WHEEL_VFX_WHEN_UNSHELTERED(false)
-  end
-end)
-
-
 --[[
 
   Harmless's Scripts Functions
 
 ]]--
 
--- Show notifications for Harmless's Scripts
+-- HS Notification Functions
 function HSNotification(message)
   if notifyCB then
     gui.show_message("Harmless's Scripts", message)
   end
 end
--- Show tooltip when hovered over Harmless's Scripts UI items
-function HSshowTooltip(message)
-  if toolTipCB then
-    ImGui.SetTooltip(message)
+
+function HSWarnNotif(message)
+  if notifyCB and warnNotifyCB then
+    gui.show_warning("Harmless's Scripts", message)
   end
 end
--- Console logs for Harmless's Scripts
+
+function HSErrorNotif(message)
+  if notifyCB and errorNotifyCB then
+    gui.show_error("Harmless's Scripts", message)
+  end
+end
+
+-- HS Console Log Functions
 function HSConsoleLogInfo(message) -- Info
   if HSConsoleLogInfoCB then
     log.info(message)
@@ -1229,4 +1592,165 @@ function HSConsoleLogDebug(message) -- Debug
   if HSConsoleLogDebugCB then
     log.debug(message)
   end
+end
+
+
+--[[
+
+  HS Tooltip Functions
+
+--]]
+
+hoverStartTimes = {}
+showTooltips = {}
+toolTipDelay = 0.2 -- seconds (200ms)
+
+local commonFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs
+local fullScreenFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground | commonFlags
+local toolTipFlags = ImGuiWindowFlags.AlwaysAutoResize | commonFlags
+local commonChildFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoBackground | commonFlags
+
+local function GetFullScreenResolution(screenWidth, screenHeight, offsetY)
+  ImGui.Begin("", fullScreenFlags)
+  ImGui.SetNextWindowPos(screenWidth / 2, screenHeight - offsetY, ImGuiCond.Always, 0.5, 1.0)
+end
+
+local function displayToolTipWindow(textWidth, totalHeight)
+  ImGui.BeginChild("Message Window (Tooltip text)", textWidth, totalHeight, false, commonChildFlags)
+end
+
+local function displayHotkeyInfo()
+  ImGui.SameLine(); ImGui.Dummy(10, 1)
+  ImGui.SameLine(); ImGui.BeginGroup()
+  ImGui.Text("Set Hotkey: F12 (WIP)")
+  ImGui.Text("Current Hotkey: None (WIP)")
+  ImGui.EndGroup()
+  ImGui.End()
+end
+
+function HSshowTooltip(message, specialMessage, smColor)
+  if ImGui.IsItemHovered() then
+    hoverStartTimes[message] = hoverStartTimes[message] or os.clock()
+    if os.clock() - hoverStartTimes[message] >= toolTipDelay then
+      showTooltips[message] = true
+      hoverStartTimes[message] = nil
+    end
+  else
+    hoverStartTimes[message] = nil
+    showTooltips[message] = false
+  end
+  if showTooltips[message] then
+    if toolTipCB and not toolTipV2CB then
+      if specialMessage then
+        message = message .. "\n\n Note: " .. specialMessage
+        ImGui.SetTooltip(message)
+      else
+        ImGui.SetTooltip(message)
+      end
+    elseif toolTipV2CB and not toolTipCB then
+      local screenWidth, screenHeight = GRAPHICS.GET_ACTUAL_SCREEN_RESOLUTION(0,0)
+      GetFullScreenResolution(screenWidth, screenHeight, 100)
+      if ImGui.Begin("ToolTip Base", toolTipFlags) then
+        local textWidth = 300
+        local _, messageHeight = ImGui.CalcTextSize(message, false, textWidth)
+        if specialMessage and smColor then
+          local _, specialMessageHeight = ImGui.CalcTextSize(specialMessage, false, textWidth)
+          local totalHeight = messageHeight + (specialMessageHeight + 10)
+          displayToolTipWindow(textWidth, totalHeight)
+          ImGui.TextWrapped(message)
+          ImGui.PushStyleColor(ImGuiCol.Text, smColor[1], smColor[2], smColor[3], smColor[4])
+          ImGui.TextWrapped(specialMessage)
+          ImGui.PopStyleColor()
+        elseif not specialMessage and not smColor then
+          displayToolTipWindow(textWidth, messageHeight)
+          ImGui.TextWrapped(message)
+        end
+        ImGui.EndChild()
+        displayHotkeyInfo()
+      end
+      ImGui.End()
+    end
+  end
+end
+
+--[[
+
+  HS Utility Functions
+
+]]--
+function BoolToStatus(boolValue) -- Convert bool true/false to Enable/Disable
+  return boolValue and "Enable" or "Disable"
+end
+
+function ReverseBoolToStatus(boolValue) -- Reverse bool convert true/false to Disable/Enable
+  return boolValue and "Disable" or "Enable"
+end
+
+function GetScreenResolution()
+  local screenWidth, screenHeight = GRAPHICS.GET_ACTUAL_SCREEN_RESOLUTION(0,0)
+  return screenWidth, screenHeight
+end
+
+function GetScreenCenter()
+  local screenWidth, screenHeight = GetScreenResolution()
+  local centerX = screenWidth / 2
+  local centerY = screenHeight / 2
+  return centerX, centerY
+end
+
+--[[
+
+  Custom ImGui Item Functions
+
+]]--
+function HSCheckbox(label, bool_variable, item_tag)
+  local newBool, toggled = ImGui.Checkbox(label, bool_variable)
+  if toggled then
+    bool_variable = newBool
+    saveToConfig(item_tag, bool_variable)
+  end
+  return bool_variable, toggled
+end
+
+function HSSliderFloat(label, float_variable, min, max, format, flags, item_tag)
+  local newFloat, used = ImGui.SliderFloat(label, float_variable, min, max, format, flags)
+  if used then
+    float_variable = newFloat
+    saveToConfig(item_tag, float_variable)
+  end
+  return float_variable, used
+end
+
+function HSSliderInt(label, int_variable, min, max, item_tag)
+  local newInt, used = ImGui.SliderInt(label, int_variable, min, max)
+  if used then
+    int_variable = newInt
+    saveToConfig(item_tag, int_variable)
+  end
+  return int_variable, used
+end
+
+function HSColorEdit4(label, color_variable, item_tag)
+  local newColor, used = ImGui.ColorEdit4(label, color_variable)
+  if used then
+    color_variable = newColor
+    saveToConfig(item_tag, color_variable)
+  end
+  return color_variable, used
+end
+
+function HSCombobox(label, current_item, items, items_count, popup_max_height_in_items, item_tag)
+  local newInt, used = ImGui.Combo(label, current_item, items, items_count, popup_max_height_in_items)
+  if used then
+    current_item = newInt
+    saveToConfig(item_tag, current_item)
+  end
+  return current_item, used
+end
+
+function HSButton(label, txtColor)
+  ImGui.PushStyleColor(ImGuiCol.Text, txtColor[1], txtColor[2], txtColor[3], txtColor[4])
+  local used = ImGui.Button(label)
+  ImGui.PopStyleColor()
+  return used
 end
