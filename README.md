@@ -39,6 +39,19 @@ Future ideas for the custom tooltip.
 - [ ] Show current keybind for the item (button, checkbox, etc)
 - [ ] Set a custom hotkey for the item
 
+## Future Ideas for Harmless's Scripts (To Do List)
+
+### NPC ESP
+
+- [ ] Show NPC Health
+- [ ] Show NPC Armor
+- [x] Skeleton ESP
+- [ ] Show if NPC is in a vehicle
+- [ ] Show if NPC is armed
+- [ ] Show Ped distance from player
+- [x] Show only visible NPCs
+- [x] Show only NPCs behind walls
+
 ## How to install
 
 1. Download the latest release [here](https://github.com/YimMenu-Lua/Harmless-Scripts/releases/latest)
