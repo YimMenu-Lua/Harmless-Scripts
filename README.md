@@ -43,14 +43,19 @@ Future ideas for the custom tooltip.
 
 ### NPC ESP
 
-- [ ] Show NPC Health
-- [ ] Show NPC Armor
+- [x] Show NPC Health
+- [x] Show NPC Armor
 - [x] Skeleton ESP
-- [ ] Show if NPC is in a vehicle
-- [ ] Show if NPC is armed
-- [ ] Show Ped distance from player
+- [x] Show if NPC is in a vehicle
+- [x] Show if NPC is armed
+- [x] Show Ped distance from player
 - [x] Show only visible NPCs
 - [x] Show only NPCs behind walls
+
+### Tooltip V2
+
+- [ ] Show current hotkey
+- [ ] Set hotkey for item (button, checkbox)
 
 ## How to install
 
