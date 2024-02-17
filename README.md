@@ -25,19 +25,7 @@ Mirrored repository from [Harmless05/harmless-lua](https://github.com/Harmless05
 | <details><summary>Radar Zoom</summary>![Image]()</details> | Zoom the radar in and out | HUD |
 | <details><summary>Expanded Radar</summary>![Image]()</details> | Show expanded radar (has the same effect when pressin Z, but is always on) | HUD |
 
-## Special Features of Harmless's Scripts
 
-- **Custom Tooltip** - Experimental type of tooltip.
-  - **Tooltip Delay** - Tooltip appears after a 300ms hover delay. 
-  - **Tooltip Position** - Tooltip appears at the bottom center of the screen.
-  - **Special Message & Color** - Set a "special message" for the tooltip that's below the regular tooltip message with a custom color.
-
-Future ideas for the custom tooltip.
-
-- [ ] Ability to change the delay time
-- [ ] Change the position of the tooltip
-- [ ] Show current keybind for the item (button, checkbox, etc)
-- [ ] Set a custom hotkey for the item
 
 ## Future Ideas for Harmless's Scripts (To Do List)
 
@@ -56,6 +44,8 @@ Future ideas for the custom tooltip.
 
 - [ ] Show current hotkey
 - [ ] Set hotkey for item (button, checkbox)
+- [ ] Change hover delay
+- [ ] Change position of the tooltip
 
 ## How to install
 
