@@ -523,12 +523,12 @@ HSTab:add_imgui(function()
   if ImGui.Button("Changelog") then
     ImGui.OpenPopup("  Version 1.2.0")
   end
-  if ImGui.BeginPopupModal("  Version 1.2.0", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse) then
+  if ImGui.BeginPopupModal("  Version 1.2.0", true, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize) then
     local centerX, centerY = GetScreenCenter()
     ImGui.SetWindowPos(centerX - 300, centerY - 200)
     ImGui.SetWindowSize(600, 400)
     ImGui.Text("Added:")
-    ImGui.TextWrapped("+ Config system :O yay 🎉 - Your settings will be saved and loaded on the next launch now!")
+    ImGui.TextWrapped("+ Config system :O yay!!! - Your settings will be saved and loaded on the next launch now!")
     ImGui.TextWrapped("+ Experimental custom tooltip - Enabled by default so people can try it out. Any feedback would be greatly appreciated. (Settings Tab)")
     ImGui.TextWrapped("+ ESP Tracers and Color (Misc Tab)")
     ImGui.TextWrapped("+ Radar zoom and expanded radar (HUD Tab)")
@@ -543,9 +543,9 @@ HSTab:add_imgui(function()
     ImGui.TextWrapped("~ Quick Options buttons have been compacted to improve visibility (Quick Options Tab)")
     ImGui.TextWrapped("~ Notifications (info, warn, error) have been separated into individual toggles (Settings Tab)")
     ImGui.TextWrapped("~ Compacted ImGui functions (Dev stuff)")
-    if ImGui.Button("Close") then
-        ImGui.CloseCurrentPopup()
-    end
+    -- if ImGui.Button("Close") then
+    --     ImGui.CloseCurrentPopup()
+    -- end
     ImGui.EndPopup()
   end
   ImGui.Separator()
@@ -665,7 +665,7 @@ function ragdollPlayerOnce()
   local forcey = ragdollForceY
   local forcez = ragdollForceZ
   local players = PLAYER.PLAYER_PED_ID()
-  PED.SET_PED_TO_RAGDOLL(players, -1, 0, ragdollType, true, true, false)
+  PED.SET_PED_TO_RAGDOLL(players, 1500, 0, ragdollType, true)
   ENTITY.APPLY_FORCE_TO_ENTITY(players, forceFlags, forcex, forcey, forcez, 0, 0, 0, 0, false, true, true, false, true)
 end
 
@@ -678,7 +678,7 @@ script.register_looped("HS Ragdoll Player Loop", function(ragdollLoop)
     local forcey = ragdollForceY
     local forcez = ragdollForceZ
     local players = PLAYER.PLAYER_PED_ID()
-    PED.SET_PED_TO_RAGDOLL(players, -1, 0, ragdollType, true, true, false)
+    PED.SET_PED_TO_RAGDOLL(players, 3000, 0, ragdollType, true, true, false)
     ENTITY.APPLY_FORCE_TO_ENTITY(players, forceFlags, forcex, forcey, forcez, 0, 0, 0, 0, false, true, true, false, true)
     ragdollLoop:sleep(math.floor(loopspd))
   end
@@ -1045,15 +1045,15 @@ script.register_looped("HS Walk on Air Loop", function(walkOnAirLoop)
     if object ~= nil then
       local player = PLAYER.PLAYER_PED_ID()
       local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
-      local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true)
-      if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
+      local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true) -- unused local?
+      if PAD.IS_CONTROL_PRESSED(0, 36) then  -- 36 = left CTRl
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false) -- a little bit smoother
         walkOnAirLoop:sleep(100)
-      elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
+      elseif PAD.IS_CONTROL_PRESSED(0, 21) then  -- 21 = left SHIFT
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)  -- a little bit smoother
         walkOnAirLoop:sleep(50)
       else
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)  -- a little bit smoother
         walkOnAirLoop:sleep(50)
       end
     end
@@ -1435,24 +1435,19 @@ local radarZoom = readFromConfig("radarZoom")
 function showExpandedRadar()
   expandedRadarCB, expandedRadarToggled = HSCheckbox("Show Expanded Radar", expandedRadarCB, "expandedRadarCB")
   HSshowTooltip(ReverseBoolToStatus(expandedRadarCB) .. " expanded radar on your screen", "Currently not working in Online", {1,0.7,0.4,1})
+  if expandedRadarCB then -- moved the execution here and removed the wile loop because it was causing the script to immediately hide the minimap in GTA online whenever it runs. we don't need to loop it because it's basically an on/off switch depending on the state of the checkbox.
+    -- if not CFX.IS_BIGMAP_ACTIVE() then -- afaik, this is required to set the expanded radar in online but we can't run CFX natives. Not entirely sure though!
+      HUD.SET_BIGMAP_ACTIVE(true, false) -- still not working in online though but it works fine in SP.
+    -- end
+  else
+    HUD.SET_BIGMAP_ACTIVE(false, false)
+  end
   radarZoom, radarZoomUsed = HSSliderInt("Radar Zoom", radarZoom, 0, 1400, "radarZoom")
   HSshowTooltip("This will change the zoom of the radar\n0 = Default\n1400 = Max Zoomed Out")
   if radarZoom then
     HUD.SET_RADAR_ZOOM(radarZoom)
   end
 end
-
-script.run_in_fiber(function(expandedRadar)
-  while true do
-    if expandedRadarCB then
-      HUD.SET_BIGMAP_ACTIVE(true, false)
-    else
-      HUD.SET_BIGMAP_ACTIVE(false, false)
-    end
-    expandedRadar:yield()
-  end
-end)
-
 --[[
 
   NPC ESP -> HS Settings
