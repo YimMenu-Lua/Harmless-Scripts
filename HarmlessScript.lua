@@ -1013,13 +1013,16 @@ end
 local object = nil
 local objectSpawned = false
 
-function spawnObject() -- Spawns the "air"
+function spawnObject(walkOnAirLoop) -- Spawns the "air" (object)
+  local model = -698352776
+  STREAMING.REQUEST_MODEL(model)
+  while not STREAMING.HAS_MODEL_LOADED(model) do walkOnAirLoop:yield() end -- Wait for the model to load
+
   gui.show_message("Controls", "Left SHIFT = go up\nLeft CTRL = go down")
   HSConsoleLogDebug("Spawning object")
   local player = PLAYER.PLAYER_PED_ID()
   local coords = ENTITY.GET_ENTITY_COORDS(player, true)
-  STREAMING.REQUEST_MODEL(-698352776)
-  object = OBJECT.CREATE_OBJECT(-698352776, coords.x, coords.y, coords.z - 1.2, true, false, false)
+  object = OBJECT.CREATE_OBJECT(model, coords.x, coords.y, coords.z - 1.2, true, false, false)
   ENTITY.SET_ENTITY_ROTATION(object, 270, 0, 0, 1, true)
   ENTITY.SET_ENTITY_VISIBLE(object, false, false)
   ENTITY.SET_ENTITY_ALPHA(object, 0, false)
@@ -1039,21 +1042,20 @@ end
 script.register_looped("HS Walk on Air Loop", function(walkOnAirLoop)
   if walkOnAirCB then
     if not objectSpawned then
-      spawnObject()
+      spawnObject(walkOnAirLoop)
       objectSpawned = true
     end
     if object ~= nil then
       local player = PLAYER.PLAYER_PED_ID()
       local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
-      local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true) -- unused local?
-      if PAD.IS_CONTROL_PRESSED(0, 36) then  -- 36 = left CTRl
-        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false) -- a little bit smoother
+      if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
         walkOnAirLoop:sleep(100)
-      elseif PAD.IS_CONTROL_PRESSED(0, 21) then  -- 21 = left SHIFT
-        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)  -- a little bit smoother
+      elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
         walkOnAirLoop:sleep(50)
       else
-        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)  -- a little bit smoother
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
         walkOnAirLoop:sleep(50)
       end
     end
