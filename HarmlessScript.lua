@@ -608,7 +608,7 @@ function playerRegenTab()
 end
 
 script.register_looped("HS Health Regeneration", function(healthLoop)
-  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) then
+  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false then
     HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
     local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
     if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
@@ -618,7 +618,7 @@ script.register_looped("HS Health Regeneration", function(healthLoop)
 end)
 
 script.register_looped("HS Armour Regeneration", function(armorLoop)
-  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) then
+  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false then
     HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
     PED.ADD_ARMOUR_TO_PED(PLAYER.PLAYER_PED_ID(), armourhealamount)
     armorLoop:sleep(math.floor(armourregenspeed * 1000)) -- 1ms * 1000 to get seconds
