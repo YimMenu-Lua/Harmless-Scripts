@@ -1,7 +1,7 @@
 --[[
   Harmless's Scripts
   Description: Harmless's Scripts is a collection of scripts made by Harmless.
-  Version: 1.2.0
+  Version: 1.2.1
 ]]--
 
 gui.show_message("Harmless's Scripts", "Harmless's Scripts loaded successfully!")
@@ -510,7 +510,7 @@ end
 
 ]]--
 HSTab:add_imgui(function()
-  ImGui.Text("Version: 1.2.0")
+  ImGui.Text("Version: 1.2.1")
   ImGui.Text("Github:")
   ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "YimMenu-Lua/Harmless-Scripts")
   if ImGui.IsItemHovered() and ImGui.IsItemClicked(0) then
@@ -521,31 +521,19 @@ HSTab:add_imgui(function()
   HSshowTooltip("Click to copy to clipboard")
   ImGui.Separator()
   if ImGui.Button("Changelog") then
-    ImGui.OpenPopup("  Version 1.2.0")
+    ImGui.OpenPopup("  Version 1.2.1")
   end
-  if ImGui.BeginPopupModal("  Version 1.2.0", true, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize) then
+  if ImGui.BeginPopupModal("  Version 1.2.1", true, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize) then
     local centerX, centerY = GetScreenCenter()
     ImGui.SetWindowPos(centerX - 300, centerY - 200)
-    ImGui.SetWindowSize(600, 400)
-    ImGui.Text("Added:")
-    ImGui.TextWrapped("+ Config system :O yay!!! - Your settings will be saved and loaded on the next launch now!")
-    ImGui.TextWrapped("+ Experimental custom tooltip - Enabled by default so people can try it out. Any feedback would be greatly appreciated. (Settings Tab)")
-    ImGui.TextWrapped("+ ESP Tracers and Color (Misc Tab)")
-    ImGui.TextWrapped("+ Radar zoom and expanded radar (HUD Tab)")
-    ImGui.TextWrapped("+ The ability to view the changelog inside YimMenu (Harmless's Scripts Tab)")
-    ImGui.TextWrapped("+ A LOT of new functions to minimize and simplify the amount of code used (Dev stuff)")
-    ImGui.TextWrapped("+ Built-in JSON library for config system (Dev stuff)")
+    ImGui.SetWindowSize(600, 300)
     ImGui.Text("Fixed:")
-    ImGui.TextWrapped("* Armor regeneration not working")
-    ImGui.TextWrapped("* NPC ESP Tab not being visible and accessible")
+    ImGui.TextWrapped("* Fixed a bug where after using ragdoll loop, the player would be stuck in ragdoll state. [By xesdoog on GitHub]")
+    ImGui.TextWrapped("* Execution moved under checkbox, removed unnecessary loop causing immediate minimap hide in GTA Online. [By xesdoog on GitHub]")
+    ImGui.TextWrapped("* Fixed a bug in \"Walk on Air\". The first time it was run, the \"air model\" was not loaded before use.")
+    ImGui.TextWrapped("* Fixed a bug where regeneration worked even when the player was dead and loading into the game.")
     ImGui.Text("Changed:")
-    ImGui.TextWrapped("~ Harmless's Scripts tab had the old URL links to this script")
-    ImGui.TextWrapped("~ Quick Options buttons have been compacted to improve visibility (Quick Options Tab)")
-    ImGui.TextWrapped("~ Notifications (info, warn, error) have been separated into individual toggles (Settings Tab)")
-    ImGui.TextWrapped("~ Compacted ImGui functions (Dev stuff)")
-    -- if ImGui.Button("Close") then
-    --     ImGui.CloseCurrentPopup()
-    -- end
+    ImGui.TextWrapped("~ Disabled the [close] button at the bottom of the window (Now there's a X at the top) [By xesdoog on GitHub]")
     ImGui.EndPopup()
   end
   ImGui.Separator()
@@ -608,7 +596,7 @@ function playerRegenTab()
 end
 
 script.register_looped("HS Health Regeneration", function(healthLoop)
-  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false then
+  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false and HUD.BUSYSPINNER_IS_ON() == false then
     HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
     local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
     if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
@@ -618,7 +606,7 @@ script.register_looped("HS Health Regeneration", function(healthLoop)
 end)
 
 script.register_looped("HS Armour Regeneration", function(armorLoop)
-  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false then
+  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false and HUD.BUSYSPINNER_IS_ON() == false then
     HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
     PED.ADD_ARMOUR_TO_PED(PLAYER.PLAYER_PED_ID(), armourhealamount)
     armorLoop:sleep(math.floor(armourregenspeed * 1000)) -- 1ms * 1000 to get seconds
