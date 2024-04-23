@@ -1,7 +1,7 @@
 --[[
   Harmless's Scripts
   Description: Harmless's Scripts is a collection of scripts made by Harmless.
-  Version: 1.2.0
+  Version: 1.2.1
 ]]--
 
 gui.show_message("Harmless's Scripts", "Harmless's Scripts loaded successfully!")
@@ -510,7 +510,7 @@ end
 
 ]]--
 HSTab:add_imgui(function()
-  ImGui.Text("Version: 1.2.0")
+  ImGui.Text("Version: 1.2.1")
   ImGui.Text("Github:")
   ImGui.SameLine(); ImGui.TextColored(0.8, 0.9, 1, 1, "YimMenu-Lua/Harmless-Scripts")
   if ImGui.IsItemHovered() and ImGui.IsItemClicked(0) then
@@ -521,31 +521,19 @@ HSTab:add_imgui(function()
   HSshowTooltip("Click to copy to clipboard")
   ImGui.Separator()
   if ImGui.Button("Changelog") then
-    ImGui.OpenPopup("  Version 1.2.0")
+    ImGui.OpenPopup("  Version 1.2.1")
   end
-  if ImGui.BeginPopupModal("  Version 1.2.0", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse) then
+  if ImGui.BeginPopupModal("  Version 1.2.1", true, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize) then
     local centerX, centerY = GetScreenCenter()
     ImGui.SetWindowPos(centerX - 300, centerY - 200)
-    ImGui.SetWindowSize(600, 400)
-    ImGui.Text("Added:")
-    ImGui.TextWrapped("+ Config system :O yay 🎉 - Your settings will be saved and loaded on the next launch now!")
-    ImGui.TextWrapped("+ Experimental custom tooltip - Enabled by default so people can try it out. Any feedback would be greatly appreciated. (Settings Tab)")
-    ImGui.TextWrapped("+ ESP Tracers and Color (Misc Tab)")
-    ImGui.TextWrapped("+ Radar zoom and expanded radar (HUD Tab)")
-    ImGui.TextWrapped("+ The ability to view the changelog inside YimMenu (Harmless's Scripts Tab)")
-    ImGui.TextWrapped("+ A LOT of new functions to minimize and simplify the amount of code used (Dev stuff)")
-    ImGui.TextWrapped("+ Built-in JSON library for config system (Dev stuff)")
+    ImGui.SetWindowSize(600, 300)
     ImGui.Text("Fixed:")
-    ImGui.TextWrapped("* Armor regeneration not working")
-    ImGui.TextWrapped("* NPC ESP Tab not being visible and accessible")
+    ImGui.TextWrapped("* Fixed a bug where after using ragdoll loop, the player would be stuck in ragdoll state. [By xesdoog on GitHub]")
+    ImGui.TextWrapped("* Execution moved under checkbox, removed unnecessary loop causing immediate minimap hide in GTA Online. [By xesdoog on GitHub]")
+    ImGui.TextWrapped("* Fixed a bug in \"Walk on Air\". The first time it was run, the \"air model\" was not loaded before use.")
+    ImGui.TextWrapped("* Fixed a bug where regeneration worked even when the player was dead and loading into the game.")
     ImGui.Text("Changed:")
-    ImGui.TextWrapped("~ Harmless's Scripts tab had the old URL links to this script")
-    ImGui.TextWrapped("~ Quick Options buttons have been compacted to improve visibility (Quick Options Tab)")
-    ImGui.TextWrapped("~ Notifications (info, warn, error) have been separated into individual toggles (Settings Tab)")
-    ImGui.TextWrapped("~ Compacted ImGui functions (Dev stuff)")
-    if ImGui.Button("Close") then
-        ImGui.CloseCurrentPopup()
-    end
+    ImGui.TextWrapped("~ Disabled the [close] button at the bottom of the window (Now there's a X at the top) [By xesdoog on GitHub]")
     ImGui.EndPopup()
   end
   ImGui.Separator()
@@ -608,7 +596,7 @@ function playerRegenTab()
 end
 
 script.register_looped("HS Health Regeneration", function(healthLoop)
-  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) then
+  if healthCB and ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID()) < ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false and HUD.BUSYSPINNER_IS_ON() == false then
     HSConsoleLogDebug("Adding " .. healthhealamount .. " amount health")
     local health = ENTITY.GET_ENTITY_HEALTH(PLAYER.PLAYER_PED_ID())
     if ENTITY.GET_ENTITY_MAX_HEALTH(PLAYER.PLAYER_PED_ID()) == health then return end
@@ -618,7 +606,7 @@ script.register_looped("HS Health Regeneration", function(healthLoop)
 end)
 
 script.register_looped("HS Armour Regeneration", function(armorLoop)
-  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) then
+  if armourCB and PED.GET_PED_ARMOUR(PLAYER.PLAYER_PED_ID()) < PLAYER.GET_PLAYER_MAX_ARMOUR(PLAYER.PLAYER_ID()) and PLAYER.IS_PLAYER_DEAD(PLAYER.PLAYER_ID()) == false and HUD.BUSYSPINNER_IS_ON() == false then
     HSConsoleLogDebug("Adding " .. armourhealamount .. " amount armor")
     PED.ADD_ARMOUR_TO_PED(PLAYER.PLAYER_PED_ID(), armourhealamount)
     armorLoop:sleep(math.floor(armourregenspeed * 1000)) -- 1ms * 1000 to get seconds
@@ -665,7 +653,7 @@ function ragdollPlayerOnce()
   local forcey = ragdollForceY
   local forcez = ragdollForceZ
   local players = PLAYER.PLAYER_PED_ID()
-  PED.SET_PED_TO_RAGDOLL(players, -1, 0, ragdollType, true, true, false)
+  PED.SET_PED_TO_RAGDOLL(players, 1500, 0, ragdollType, true)
   ENTITY.APPLY_FORCE_TO_ENTITY(players, forceFlags, forcex, forcey, forcez, 0, 0, 0, 0, false, true, true, false, true)
 end
 
@@ -678,7 +666,7 @@ script.register_looped("HS Ragdoll Player Loop", function(ragdollLoop)
     local forcey = ragdollForceY
     local forcez = ragdollForceZ
     local players = PLAYER.PLAYER_PED_ID()
-    PED.SET_PED_TO_RAGDOLL(players, -1, 0, ragdollType, true, true, false)
+    PED.SET_PED_TO_RAGDOLL(players, 3000, 0, ragdollType, true, true, false)
     ENTITY.APPLY_FORCE_TO_ENTITY(players, forceFlags, forcex, forcey, forcez, 0, 0, 0, 0, false, true, true, false, true)
     ragdollLoop:sleep(math.floor(loopspd))
   end
@@ -1013,13 +1001,16 @@ end
 local object = nil
 local objectSpawned = false
 
-function spawnObject() -- Spawns the "air"
+function spawnObject(walkOnAirLoop) -- Spawns the "air" (object)
+  local model = -698352776
+  STREAMING.REQUEST_MODEL(model)
+  while not STREAMING.HAS_MODEL_LOADED(model) do walkOnAirLoop:yield() end -- Wait for the model to load
+
   gui.show_message("Controls", "Left SHIFT = go up\nLeft CTRL = go down")
   HSConsoleLogDebug("Spawning object")
   local player = PLAYER.PLAYER_PED_ID()
   local coords = ENTITY.GET_ENTITY_COORDS(player, true)
-  STREAMING.REQUEST_MODEL(-698352776)
-  object = OBJECT.CREATE_OBJECT(-698352776, coords.x, coords.y, coords.z - 1.2, true, false, false)
+  object = OBJECT.CREATE_OBJECT(model, coords.x, coords.y, coords.z - 1.2, true, false, false)
   ENTITY.SET_ENTITY_ROTATION(object, 270, 0, 0, 1, true)
   ENTITY.SET_ENTITY_VISIBLE(object, false, false)
   ENTITY.SET_ENTITY_ALPHA(object, 0, false)
@@ -1039,21 +1030,20 @@ end
 script.register_looped("HS Walk on Air Loop", function(walkOnAirLoop)
   if walkOnAirCB then
     if not objectSpawned then
-      spawnObject()
+      spawnObject(walkOnAirLoop)
       objectSpawned = true
     end
     if object ~= nil then
       local player = PLAYER.PLAYER_PED_ID()
       local playerCoords = ENTITY.GET_ENTITY_COORDS(player, true)
-      local objectCoords = ENTITY.GET_ENTITY_COORDS(object, true)
       if PAD.IS_CONTROL_PRESSED(0, 36) then -- 36 = left CTRl
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.4, false, false, false, false)
         walkOnAirLoop:sleep(100)
       elseif PAD.IS_CONTROL_PRESSED(0, 21) then -- 21 = left SHIFT
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 0.7, false, false, false, false)
         walkOnAirLoop:sleep(50)
       else
-        ENTITY.SET_ENTITY_COORDS(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
+        ENTITY.SET_ENTITY_COORDS_NO_OFFSET(object, playerCoords.x, playerCoords.y, playerCoords.z - 1.075, false, false, false, false)
         walkOnAirLoop:sleep(50)
       end
     end
@@ -1435,24 +1425,19 @@ local radarZoom = readFromConfig("radarZoom")
 function showExpandedRadar()
   expandedRadarCB, expandedRadarToggled = HSCheckbox("Show Expanded Radar", expandedRadarCB, "expandedRadarCB")
   HSshowTooltip(ReverseBoolToStatus(expandedRadarCB) .. " expanded radar on your screen", "Currently not working in Online", {1,0.7,0.4,1})
+  if expandedRadarCB then -- moved the execution here and removed the wile loop because it was causing the script to immediately hide the minimap in GTA online whenever it runs. we don't need to loop it because it's basically an on/off switch depending on the state of the checkbox.
+    -- if not CFX.IS_BIGMAP_ACTIVE() then -- afaik, this is required to set the expanded radar in online but we can't run CFX natives. Not entirely sure though!
+      HUD.SET_BIGMAP_ACTIVE(true, false) -- still not working in online though but it works fine in SP.
+    -- end
+  else
+    HUD.SET_BIGMAP_ACTIVE(false, false)
+  end
   radarZoom, radarZoomUsed = HSSliderInt("Radar Zoom", radarZoom, 0, 1400, "radarZoom")
   HSshowTooltip("This will change the zoom of the radar\n0 = Default\n1400 = Max Zoomed Out")
   if radarZoom then
     HUD.SET_RADAR_ZOOM(radarZoom)
   end
 end
-
-script.run_in_fiber(function(expandedRadar)
-  while true do
-    if expandedRadarCB then
-      HUD.SET_BIGMAP_ACTIVE(true, false)
-    else
-      HUD.SET_BIGMAP_ACTIVE(false, false)
-    end
-    expandedRadar:yield()
-  end
-end)
-
 --[[
 
   NPC ESP -> HS Settings
