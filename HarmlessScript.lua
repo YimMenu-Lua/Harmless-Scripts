@@ -413,6 +413,7 @@ local default_config = {
   npcEspShowEnemCB = false,
   npcEspBoxCB = true,
   npCEspTracerCB = false,
+  npcEspLosCB = false,
   npcEspDistance = 50,
   npcEspColor = {1.0, 0.0, 0.0, 1.0},
   notifyCB = true,
@@ -1070,7 +1071,48 @@ script.register_looped("HS Walk on Air Loop", function(walkOnAirLoop)
     deleteObject()
   end
 end)
-  
+
+--[[
+
+  Low Graphics -> Misc Options
+
+]]--
+
+local lowGraphicsCB = readFromConfig("lowGraphicsCB")
+function lowGraphicsTab()
+  lowGraphicsCB, lowGraphicsToggled = HSCheckbox("Low Graphics", lowGraphicsCB, "lowGraphicsCB")
+  HSshowTooltip("Enables low graphics mode")
+  if lowGraphicsToggled then
+    if lowGraphicsCB then
+      STREAMING.SET_FOCUS_POS_AND_VEL(9999, 9999, -9999, 0, 0, 0)
+    elseif not lowGraphicsCB then
+      STREAMING.CLEAR_FOCUS()
+    end
+  end
+end
+
+--[[
+
+  Snow Trails -> Misc Options
+
+]]--
+
+local snowTrailsCB = readFromConfig("snowTrailsCB")
+function snowTrailsTab()
+  snowTrailsCB, snowTrailsToggled = HSCheckbox("Snow Trails", snowTrailsCB, "snowTrailsCB")
+  HSshowTooltip("Enables snow trails for peds and vehicles")
+  if snowTrailsToggled then
+    if snowTrailsCB then
+      GRAPHICS.USE_SNOW_FOOT_VFX_WHEN_UNSHELTERED(true)
+      GRAPHICS.USE_SNOW_WHEEL_VFX_WHEN_UNSHELTERED(true)
+    elseif not snowTrailsCB then
+      GRAPHICS.USE_SNOW_FOOT_VFX_WHEN_UNSHELTERED(false)
+      GRAPHICS.USE_SNOW_WHEEL_VFX_WHEN_UNSHELTERED(false)
+    end
+  end
+end
+
+
 --[[
 
   Quick Options
@@ -1209,7 +1251,7 @@ HSSettings:add_imgui(function()
     saveToConfig("toolTipV2CB", false)
   end
   --HSshowTooltip(ReverseBoolToStatus(toolTipCB) .. " the default ImGui tooltip for Harmless's Scripts")
-
+  
   --- HS ToolTip V2 (Custom ToolTip)
   toolTipV2CB, toolTipV2Toggled = HSCheckbox("HS ToolTip V2", toolTipV2CB, "toolTipV2CB")
   if toolTipV2CB then
@@ -1221,7 +1263,7 @@ HSSettings:add_imgui(function()
   -- ToolTip Delay Slider
   toolTipDelay, toolTipDelayUsed = HSSliderFloat("HS ToolTip Delay", toolTipDelay, 0, 1, "%.2f", ImGuiSliderFlags.Logarithmic, "toolTipDelay")
   HSshowTooltip("The amount of time in seconds before the tooltip appears")
-  
+
   --- ToolTip Icon Toggle
   toolTipIconCB, toolTipIconToggled = HSCheckbox("HS ToolTip Icon", toolTipIconCB, "toolTipIconCB")
   HSshowTooltip("Shows a question mark icon next to buttons, sliders, etc")
@@ -1233,8 +1275,8 @@ HSSettings:add_imgui(function()
   --- View ToolTip Only on Icon Hover
   toolTipIconOnlyCB, toolTipIconOnlyToggled = HSCheckbox("HS ToolTip Icon Hover Only", toolTipIconOnlyCB, "toolTipIconOnlyCB")
   HSshowTooltip("Tooltip is shown only when hovering over the question mark icon")
-  
-  --- HS Console Logs 
+
+  --- HS Console Logs
   ImGui.Spacing();ImGui.SeparatorText("Console Logs")
   -- (The toggles seemed self-explanatory, so I disabled the tooltips)
   HSConsoleLogInfoCB, HSConsoleLogInfoToggled = HSCheckbox("HS Console Logs (Info)", HSConsoleLogInfoCB, "HSConsoleLogInfoCB")
@@ -1360,7 +1402,7 @@ end)
 
 --[[
 
-  Show Expanded Radar -> HUD Tab
+  Radar Manipulations -> HUD Tab
 
 ]]--
 
@@ -1399,14 +1441,15 @@ local npcEspCB = readFromConfig("npcEspCB")
 local npcEspShowEnemCB = readFromConfig("npcEspShowEnemCB")
 local npcEspBoxCB = readFromConfig("npcEspBoxCB")
 local npcEspTracerCB = readFromConfig("npCEspTracerCB")
+local npcEspLosCB = readFromConfig("npcEspLosCB")
 local npcEspDistance = readFromConfig("npcEspDistance")
 local npcEspColor = readFromConfig("npcEspColor")
 
 function npcEspTab()
   npcEspCB, npcEspToggled = HSCheckbox("NPC ESP", npcEspCB, "npcEspCB")
-  HSshowTooltip("Draws a box around NPCs")
   npcEspShowEnemCB, npcEspShowEnemCBToggled = HSCheckbox("Show Only Enemies", npcEspShowEnemCB, "npcEspShowEnemCB")
   npcEspBoxCB, npcEspBoxCBToggled = HSCheckbox("NPC ESP Box", npcEspBoxCB, "npcEspBoxCB")
+  HSshowTooltip("Draws a box around NPCs")
   npcEspTracerCB, npcEspTracerCBToggled = HSCheckbox("NPC ESP Tracer", npcEspTracerCB, "npCEspTracerCB")
   HSshowTooltip("Draws a line from the NPC to the player")
   npcEspDistance, npcEspDistanceUsed = HSSliderFloat("ESP Max Distance", npcEspDistance, 0, 150, "%.0f", ImGuiSliderFlags.Logarithmic, "npcEspDistance")
@@ -1420,14 +1463,6 @@ end
 
 function draw_rect(x, y, width, height)
   GRAPHICS.DRAW_RECT(x, y, width, height, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255), false)
-end
-
-function LineESP(player, playerCoords, ped, pedCoords)
-  if npcEspTracerCB and ENTITY.HAS_ENTITY_CLEAR_LOS_TO_ENTITY(ped, player, 1) then
-    GRAPHICS.DRAW_LINE(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255))
-  else
-    GRAPHICS.DRAW_LINE(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255))
-  end
 end
 
 script.register_looped("HS NPC ESP Loop", function(npcEspLoop)
@@ -1473,8 +1508,7 @@ script.register_looped("HS NPC ESP Loop", function(npcEspLoop)
           end
           -- Draw a line from the player to the NPC if the tracer is enabled
           if success and npcEspTracerCB and (not npcEspShowEnemCB or pedEnemy) then
-            LineESP(player, playerCoords, ped, pedCoords)
-            -- GRAPHICS.DRAW_LINE(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255))
+            GRAPHICS.DRAW_LINE(playerCoords.x, playerCoords.y, playerCoords.z, pedCoords.x, pedCoords.y, pedCoords.z, math.floor(npcEspColor[1] * 255), math.floor(npcEspColor[2] * 255), math.floor(npcEspColor[3] * 255), math.floor(npcEspColor[4] * 255))
           end
         end
       end
@@ -1578,20 +1612,22 @@ local function hoverCheck(message)
     hoverStartTimes[message] = nil
     showTooltips[message] = false
   end
-  -- Show (?) icon
-  -- Credits: @Deadlineem and Extras Addon for the tooltip icon idea "(?)"
+end
+
+-- Show (?) icon
+-- Credits: @Deadlineem and Extras Addon for the tooltip icon idea "(?)"
 local function displayToolTipIcon(smColor)
   if toolTipIconCB then
-  ImGui.SameLine()
-  if smColor then
-    ImGui.PushStyleColor(ImGuiCol.Text, smColor[1], smColor[2], smColor[3], smColor[4] - 0.4)
-    ImGui.Text("(?)") 
-    ImGui.PopStyleColor()
-  elseif not smColor then
-    ImGui.PushStyleColor(ImGuiCol.Text, 0.4, 0.4, 0.4, 1)
-    ImGui.Text("(?)")
-    ImGui.PopStyleColor()
-  end
+    ImGui.SameLine()
+    if smColor then
+      ImGui.PushStyleColor(ImGuiCol.Text, smColor[1], smColor[2], smColor[3], smColor[4] - 0.4)
+      ImGui.Text("(?)") 
+      ImGui.PopStyleColor()
+    elseif not smColor then
+      ImGui.PushStyleColor(ImGuiCol.Text, 0.4, 0.4, 0.4, 1)
+      ImGui.Text("(?)")
+      ImGui.PopStyleColor()
+    end
   end
 end
 
