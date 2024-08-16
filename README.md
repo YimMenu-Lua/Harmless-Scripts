@@ -1,51 +1,136 @@
+<!-- omit in toc -->
 # Harmless's Lua Scripts
 
-Repo for Lua scripts made by Harmless for [YimMenu](https://github.com/YimMenu/YimMenu/)
+Fun and useful Lua scripts for [YimMenu](https://github.com/YimMenu/YimMenu/) made by [Harmless](https://github.com/Harmless05/) :D
 
-Mirrored repository from [Harmless05/harmless-lua](https://github.com/Harmless05/harmless-lua/)
+
+- [Script Layout](#script-layout)
+- [Current Features of Harmless's Scripts](#current-features-of-harmlesss-scripts)
+- [How to install](#how-to-install)
+- [Warranty Disclaimer](#warranty-disclaimer)
+- [Usage of Harmless's Scripts](#usage-of-harmlesss-scripts)
+- [Reporting and suggestions](#reporting-and-suggestions)
+
+## Script Layout
+
+<details>
+<summary><h3>Self Tab</h3></summary>
+
+- Player Regeneration
+- Player Speed Multipliers
+- Ragdoll Player
+
+</details>
+
+<details>
+<summary><h3>Teleport Tab</h3></summary>
+
+- Quick Teleport
+- Popular Locations
+
+</details>
+
+<details>
+<summary><h3>Vehicle Tab</h3></summary>
+
+- Set Vehicle Max Speed
+- Set Vehicle Forward Speed
+- Shift Drift
+- Auto Flip Vehicle
+
+</details>
+
+<details>
+<summary><h3>Misc Tab</h3></summary>
+
+- Walk on Air
+- Low Graphics (Potato mode)
+- Snow Trails
+
+</details>
+
+<details>
+<summary><h3>Quick Tab</h3></summary>
+
+- Self Options
+  - Clear Wanted Level
+  - Heal Player
+  - Give All Weapons
+  - Give All Ammo
+  - Fill Ammo
+  - Give Max Armor
+  - Clean Player
+  - Fill Snacks
+- Teleport Options
+  - Teleport to Waypoint
+  - Teleport to Objective
+- Vehicle Options
+  - Repair Personal Vehicle
+  - Upgrade Vehicle
+  - Downgrade Vehicle
+  - Bring Personal Vehicle
+  - TP into Personal Vehicle
+- Misc Options
+  - Leave Online
+  - Damage Player
+  - Rage Quit
+
+</details>
+
+<details>
+<summary><h3>Settings</h3></summary>
+
+- Notifications
+- ImGui Tooltip (YimMenu Default)
+- Custom Tooltip
+- Console Logs
+- Reset Config
+
+</details>
+
+<details>
+<summary><h3>HUD</h3></summary>
+
+- Show Local Time
+- Expanded Radar
+- Radar Zoom
+
+</details>
+
+<details>
+<summary><h3>NPC ESP</h3></summary>
+
+- NPC ESP
+- Show Only Hostile NPCs
+- Box ESP
+- Tracers (Line ESP)
+- Max Distance
+- ESP Color
+
+</details>
 
 ## Current Features of Harmless's Scripts
 
 | Name | Description | Location |
 | ----------- | ----------- | ----------- |
-| <details><summary>Ragdoll Player</summary>![Image]()</details> | Ragdoll yourself once or looped | Self |
-| <details><summary>Walk on Air</summary>![Image]()</details> | Walk on air (literally) | Self |
-| <details><summary>Player Speed Multipliers</summary>![Image]()</details> | Set the speed multiplier of walk and swim speed | Self |
-| <details><summary>Player Regeneration</summary>![Image]()</details> | Regenerate your health and armor | Self |
-| <details><summary>Set Vehicle Max Speed</summary>![Image]()</details> | Set the max speed limit of your vehicle | Vehicle |
-| <details><summary>Set Vehicle Forward Speed</summary>![Image]()</details> | Set the forward speed of your vehicle | Vehicle |
-| <details><summary>Shift Drift</summary>![Image]()</details> | Press SHIFT to drift your vehicle | Vehicle |
-| <details><summary>Auto Flip Vehicle</summary>![Image]()</details> | Flip your vehicle automatically back upwards | Vehicle |
-| <details><summary>Thermal and Night Vision</summary>![Image]()</details> | Enable Thermal and Night Vision | Misc |
-| <details><summary>Quick Options</summary>![Image]()</details> | Ease of access to more "popular" options | Quick |
-| <details><summary>Quick Teleport</summary>![Image]()</details> | Save your current location and teleport to it later | Teleport |
-| <details><summary>Popular Locations</summary>![Image]()</details> | Teleport to popular GTAV locations | Teleport -> Popular Locations |
-| <details><summary>Show Local Time</summary>![Image]()</details> | Shows your local time on the screen | HUD |
-| <details><summary>NPC ESP</summary>![Image]()</details> | ESP for NPCs | Misc |
-| <details><summary>Radar Zoom</summary>![Image]()</details> | Zoom the radar in and out | HUD |
-| <details><summary>Expanded Radar</summary>![Image]()</details> | Show expanded radar (has the same effect when pressin Z, but is always on) | HUD |
+| Ragdoll Player | Ragdoll yourself once or looped | Self |
+| Walk on Air | Walk on air (literally) | Self |
+| Player Speed Multipliers | Set the speed multiplier of walk and swim speed | Self |
+| Player Regeneration | Regenerate your health and armor | Self |
+| Set Vehicle Max Speed | Set the max speed limit of your vehicle | Vehicle |
+| Set Vehicle Forward Speed | Set the forward speed of your vehicle | Vehicle |
+| Shift Drift | Press SHIFT to drift your vehicle | Vehicle |
+| Auto Flip Vehicle | Flip your vehicle automatically back upwards | Vehicle |
+| Thermal and Night Vision | Enable Thermal and Night Vision | Misc |
+| Quick Options | Ease of access to more "popular" options | Quick |
+| Quick Teleport | Save your current location and teleport to it later | Teleport |
+| Popular Locations | Teleport to popular GTAV locations | Teleport -> Popular Locations |
+| Show Local Time | Shows your local time on the screen | HUD |
+| NPC ESP | ESP for NPCs | Misc |
+| Radar Zoom | Zoom the radar in and out | HUD |
+| Expanded Radar | Show expanded radar (has the same effect when pressin Z, but is always on) | HUD |
+| Custom Tooltip | Custom tooltip for Harmless's Scripts |  |
 
-
-
-## Future Ideas for Harmless's Scripts (To Do List)
-
-### NPC ESP
-
-- [x] Show NPC Health
-- [x] Show NPC Armor
-- [x] Skeleton ESP
-- [x] Show if NPC is in a vehicle
-- [x] Show if NPC is armed
-- [x] Show Ped distance from player
-- [x] Show only visible NPCs
-- [x] Show only NPCs behind walls
-
-### Tooltip V2
-
-- [ ] Show current hotkey
-- [ ] Set hotkey for item (button, checkbox)
-- [ ] Change hover delay
-- [ ] Change position of the tooltip
 
 ## How to install
 
@@ -75,4 +160,5 @@ If you encounter any issues or bugs while using Harmless's Scripts, please repor
 
 You are also welcome to suggest new scripts, features, or improvements to existing features of Harmless's Scripts. Please note that I may not be able to implement all suggestions, but I will do my best to consider them
 
+<!-- omit in toc -->
 #### You can report your issues by visiting the following link: <https://github.com/YimMenu-Lua/Harmless-Scripts/issues/new/choose>
